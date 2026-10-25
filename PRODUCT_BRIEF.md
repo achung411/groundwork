@@ -30,8 +30,8 @@ Create an owner-focused administrative workspace, rather than a tenant-facing po
 ### Product principles
 
 - **Evidence before assertion:** Show the transaction details or lease passage supporting an extracted or matched fact.
-- **Human approval for consequential changes:** AI may propose an extraction, match, status update, or reminder draft. A person approves it before it changes an approved record or is sent externally.
-- **Deterministic rules for arithmetic and dates:** Use code for amount comparisons, due dates, and payment status calculations. Use AI for document interpretation, ambiguous transaction descriptions, and clear explanations.
+- **Human approval for consequential changes:** AI proposes lease extractions; application rules propose payment matches and prepare reminder drafts. A person approves changes to approved records. The prototype sends nothing externally.
+- **Deterministic rules for arithmetic and dates:** Use code for amount comparisons, due dates, payment status calculations, match explanations, and reminder templates. Use AI for lease-document interpretation only.
 - **Keep history:** Preserve source documents, approved values, prior values, decisions, and unresolved exceptions so a later run can use relevant context.
 - **Be explicit about uncertainty:** Flag ambiguous lease language, missing evidence, duplicate candidates, or partial payments for review. Do not infer late fees or legal consequences that are not supported by an approved lease term.
 - **Protect family information:** Use fictional sample documents and transaction data in the take-home prototype. Do not put leases, payment data, credentials, or other secrets in the code repository.
@@ -40,7 +40,7 @@ Create an owner-focused administrative workspace, rather than a tenant-facing po
 
 1. **Establish expected rent.** Start with manually entered lease facts or use a reusable lease-extraction skill in a separate ChatGPT session with a fictional lease packet. Transfer the skill's structured proposal into the app, then review each term against its cited source passage before approval.
 2. **Import a monthly transaction file.** Load a fictional bank-transaction CSV that represents a bank feed. This is a simulation, not a connection to a real bank.
-3. **Suggest payment matches.** Compare transactions against expected rent obligations. Use exact rules for amounts and dates; use AI to interpret descriptions or explain ambiguous candidates.
+3. **Suggest payment matches.** Compare transactions against expected rent obligations using deterministic account, amount, and date rules. Explain candidates and leave ambiguous cases for human review.
 4. **Review and approve.** Show evidence, confidence or uncertainty, and the proposed result. Require a human decision before recording a payment or resolving an exception.
 5. **Prepare follow-up.** For an overdue or unresolved obligation, generate a neutral reminder draft for review. The prototype does not send email.
 6. **Reuse memory on a later run.** Persist approved lease facts, imported transactions, human decisions, and open exceptions. Demonstrate that a later transaction can resolve a previously open item without erasing its history.
@@ -92,9 +92,9 @@ These may be future product directions if the prototype and user feedback suppor
 | Extract rent terms and dates from lease documents | User invokes a reusable skill in ChatGPT; it proposes structured facts with source references, which the user transfers into the app for validation and approval |
 | Resolve amendments and extensions | AI identifies candidate changes and relevant evidence; uncertain or conflicting changes require review |
 | Compare payment amounts and dates | Deterministic application logic |
-| Interpret a transaction memo or suggest a match | AI may rank/explain candidates; user approves the match |
+| Interpret a transaction memo or suggest a match | Deterministic rules explain full-payment candidates; partial payments require manual allocation and approval |
 | Calculate overdue status | Deterministic logic based on approved due-date terms and the selected review date |
-| Draft a reminder | AI drafts from approved facts; user reviews; no sending |
+| Draft a reminder | A deterministic template uses approved facts; user reviews; no sending |
 | Reconcile an ambiguous or unsupported case | Keep it open and explain what evidence or decision is needed |
 
 ## Memory model to demonstrate
@@ -110,6 +110,10 @@ The prototype should make its stored context inspectable. A lightweight store is
 - **Exception:** issue type, supporting evidence, open/resolved status, and resolution history.
 
 An AI extraction must not silently overwrite an approved current term. A later amendment should create a proposed change linked to its source; after approval, the current effective record can be updated while the prior value remains in history. In the prototype, extraction runs outside the app through the user's ChatGPT session; the app validates the submitted structure and citations, then leaves approval to the user.
+
+For this iteration, amendments affect new obligations and payments only. Recalculating or reopening previously reconciled periods is out of scope. Automatic matching produces full-payment proposals only; recording any match still requires human approval. Partial payments require explicit manual allocation and approval.
+
+Lease extraction is the only runtime AI capability. The live ChatGPT skill defines a versioned JSON response, and the app provides a paste interface for that JSON. The user may copy just the JSON portion of a response containing additional prose; a saved model response is not required for the demo. Matching, explanations, reports, and reminder drafts use deterministic code and templates.
 
 ## Evaluation and success measures
 

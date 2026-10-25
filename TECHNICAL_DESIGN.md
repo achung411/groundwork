@@ -104,9 +104,12 @@ The exact module boundaries can change during implementation if a simpler struct
 2. The user invokes the lease-extraction skill in ChatGPT with the source text and the skill's instructions.
 3. The skill returns a JSON proposal. Each proposed fact includes its type, value, effective date when applicable, and evidence containing page, section, and an exact source quotation. Unclear or conflicting facts are marked for review rather than guessed.
 4. The user pastes the JSON into the app.
+   The skill defines the exact versioned response contract. The user may copy only the JSON portion if ChatGPT adds surrounding prose; the app does not need to extract JSON from arbitrary model commentary. The demo uses live extraction rather than requiring a saved response fixture.
 5. The app validates the JSON shape, checks that cited quotations occur in the available source text where possible, and stages the proposals as pending.
 6. The user reviews the evidence and approves, edits, or rejects each fact.
 7. Approval creates or updates the effective lease record while preserving the prior value and the review decision.
+
+Amendments in this iteration affect new obligations and payments only. Recalculation or reopening of previously reconciled periods is out of scope; existing obligations and recorded allocations retain their approved values.
 
 The prototype does not call a model API or transmit a document automatically. Only fictional documents are used in the demo. Manual copy/paste is the explicit boundary between the app and ChatGPT.
 
@@ -122,6 +125,8 @@ The prototype does not call a model API or transmit a document automatically. On
 
 For the first slice, the matcher should favor transparent, explainable rules over fuzzy scoring. It may suggest exact-amount and account-aligned candidates; it must not force a match when there are multiple candidates or incomplete payment evidence.
 
+Only full payments receive automatic match proposals, and every proposal still requires approval before recording. Partial payments are handled through explicit manual allocation and approval. Approved allocations must be persisted so multiple payments can satisfy one obligation without reusing a transaction's allocated amount. An unidentified credit is not automatically combined with a partial payment simply because their total equals rent.
+
 ### 5.3 Needs Attention and reminder draft
 
 - The user selects an explicit “as of” date, with today as the default.
@@ -129,6 +134,8 @@ For the first slice, the matcher should favor transparent, explainable rules ove
 - Code derives lease option notice windows from approved dates and notice rules. It must not infer that an option was exercised.
 - The interface distinguishes an overdue payment from a lease-defined late fee or legal consequence. It shows no fee unless a reviewed source term supports one.
 - The user can prepare a neutral reminder draft from approved facts. The draft is saved or displayed for review and is never sent by this prototype.
+
+Matching explanations, the reconciliation report, and reminder drafts are deterministic templates. Lease extraction in the separate ChatGPT session is the only runtime AI capability.
 
 No scheduler is required. The check runs when the user opens or refreshes the relevant view.
 
@@ -147,6 +154,7 @@ Use SQLite tables with foreign keys and timestamps. Keep the first schema small,
 | `imports` | `id`, `filename`, `content_digest`, `imported_at`, `status` | Import/run identity and duplicate-file prevention |
 | `transactions` | `id`, `external_id`, `import_id`, `property_id` or `account_label`, `posted_date`, `description`, `amount` | Synthetic incoming bank activity |
 | `match_proposals` | `id`, `transaction_id`, `obligation_id`, `proposed_amount`, `status`, `rationale`, `created_at` | Candidate matches and their human-reviewed outcome |
+| `payment_allocations` | `id`, `transaction_id`, `obligation_id`, `amount_cents`, `review_decision_id`, `created_at` | Approved full or partial payments; balances derive from these records |
 | `exceptions` | `id`, `property_id`, `transaction_id`, `obligation_id`, `kind`, `status`, `resolution_notes`, timestamps | Unresolved issues and retained resolution history |
 
 The initial schema may combine or simplify tables where doing so keeps the app understandable. Do not collapse source evidence and approval history into a single mutable “current value” field. A later amendment must be able to propose a new effective value while preserving the previous value and its source.
