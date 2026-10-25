@@ -1,0 +1,16 @@
+# Local credentials and environment-specific configuration
+.env
+.env.*
+!.env.example
+
+# Local application data and uploaded documents
+/data/private/
+/uploads/
+*.db
+*.sqlite
+*.sqlite3
+
+# Local operating-system and editor files
+.DS_Store
+.idea/
+.vscode/
