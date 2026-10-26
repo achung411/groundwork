@@ -1,0 +1,655 @@
+{
+  "$defs": {
+    "DateValue": {
+      "additionalProperties": false,
+      "properties": {
+        "date": {
+          "format": "date",
+          "title": "Date",
+          "type": "string"
+        }
+      },
+      "required": [
+        "date"
+      ],
+      "title": "DateValue",
+      "type": "object"
+    },
+    "DueFact": {
+      "additionalProperties": false,
+      "properties": {
+        "effective_from": {
+          "anyOf": [
+            {
+              "format": "date",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Effective From"
+        },
+        "effective_to": {
+          "anyOf": [
+            {
+              "format": "date",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Effective To"
+        },
+        "status": {
+          "const": "proposed",
+          "title": "Status",
+          "type": "string"
+        },
+        "uncertainty": {
+          "anyOf": [
+            {
+              "maxLength": 2000,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Uncertainty"
+        },
+        "evidence": {
+          "items": {
+            "$ref": "#/$defs/Evidence"
+          },
+          "maxItems": 10,
+          "minItems": 1,
+          "title": "Evidence",
+          "type": "array"
+        },
+        "fact_type": {
+          "const": "rent_due_day",
+          "title": "Fact Type",
+          "type": "string"
+        },
+        "value": {
+          "$ref": "#/$defs/DueValue"
+        }
+      },
+      "required": [
+        "effective_from",
+        "status",
+        "evidence",
+        "fact_type",
+        "value"
+      ],
+      "title": "DueFact",
+      "type": "object"
+    },
+    "DueValue": {
+      "additionalProperties": false,
+      "properties": {
+        "day": {
+          "maximum": 31,
+          "minimum": 1,
+          "title": "Day",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "day"
+      ],
+      "title": "DueValue",
+      "type": "object"
+    },
+    "EndFact": {
+      "additionalProperties": false,
+      "properties": {
+        "effective_from": {
+          "anyOf": [
+            {
+              "format": "date",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Effective From"
+        },
+        "effective_to": {
+          "anyOf": [
+            {
+              "format": "date",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Effective To"
+        },
+        "status": {
+          "const": "proposed",
+          "title": "Status",
+          "type": "string"
+        },
+        "uncertainty": {
+          "anyOf": [
+            {
+              "maxLength": 2000,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Uncertainty"
+        },
+        "evidence": {
+          "items": {
+            "$ref": "#/$defs/Evidence"
+          },
+          "maxItems": 10,
+          "minItems": 1,
+          "title": "Evidence",
+          "type": "array"
+        },
+        "fact_type": {
+          "const": "lease_end",
+          "title": "Fact Type",
+          "type": "string"
+        },
+        "value": {
+          "$ref": "#/$defs/DateValue"
+        }
+      },
+      "required": [
+        "effective_from",
+        "status",
+        "evidence",
+        "fact_type",
+        "value"
+      ],
+      "title": "EndFact",
+      "type": "object"
+    },
+    "Evidence": {
+      "additionalProperties": false,
+      "properties": {
+        "page": {
+          "minimum": 1,
+          "title": "Page",
+          "type": "integer"
+        },
+        "section": {
+          "maxLength": 300,
+          "minLength": 1,
+          "title": "Section",
+          "type": "string"
+        },
+        "quote": {
+          "maxLength": 6000,
+          "minLength": 1,
+          "title": "Quote",
+          "type": "string"
+        }
+      },
+      "required": [
+        "page",
+        "section",
+        "quote"
+      ],
+      "title": "Evidence",
+      "type": "object"
+    },
+    "GraceFact": {
+      "additionalProperties": false,
+      "properties": {
+        "effective_from": {
+          "anyOf": [
+            {
+              "format": "date",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Effective From"
+        },
+        "effective_to": {
+          "anyOf": [
+            {
+              "format": "date",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Effective To"
+        },
+        "status": {
+          "const": "proposed",
+          "title": "Status",
+          "type": "string"
+        },
+        "uncertainty": {
+          "anyOf": [
+            {
+              "maxLength": 2000,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Uncertainty"
+        },
+        "evidence": {
+          "items": {
+            "$ref": "#/$defs/Evidence"
+          },
+          "maxItems": 10,
+          "minItems": 1,
+          "title": "Evidence",
+          "type": "array"
+        },
+        "fact_type": {
+          "const": "grace_period",
+          "title": "Fact Type",
+          "type": "string"
+        },
+        "value": {
+          "$ref": "#/$defs/GraceValue"
+        }
+      },
+      "required": [
+        "effective_from",
+        "status",
+        "evidence",
+        "fact_type",
+        "value"
+      ],
+      "title": "GraceFact",
+      "type": "object"
+    },
+    "GraceValue": {
+      "additionalProperties": false,
+      "properties": {
+        "days": {
+          "maximum": 365,
+          "minimum": 0,
+          "title": "Days",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "days"
+      ],
+      "title": "GraceValue",
+      "type": "object"
+    },
+    "OptionFact": {
+      "additionalProperties": false,
+      "properties": {
+        "effective_from": {
+          "anyOf": [
+            {
+              "format": "date",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Effective From"
+        },
+        "effective_to": {
+          "anyOf": [
+            {
+              "format": "date",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Effective To"
+        },
+        "status": {
+          "const": "proposed",
+          "title": "Status",
+          "type": "string"
+        },
+        "uncertainty": {
+          "anyOf": [
+            {
+              "maxLength": 2000,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Uncertainty"
+        },
+        "evidence": {
+          "items": {
+            "$ref": "#/$defs/Evidence"
+          },
+          "maxItems": 10,
+          "minItems": 1,
+          "title": "Evidence",
+          "type": "array"
+        },
+        "fact_type": {
+          "const": "extension_option",
+          "title": "Fact Type",
+          "type": "string"
+        },
+        "value": {
+          "$ref": "#/$defs/OptionValue"
+        }
+      },
+      "required": [
+        "effective_from",
+        "status",
+        "evidence",
+        "fact_type",
+        "value"
+      ],
+      "title": "OptionFact",
+      "type": "object"
+    },
+    "OptionValue": {
+      "additionalProperties": false,
+      "properties": {
+        "options_count": {
+          "maximum": 10,
+          "minimum": 1,
+          "title": "Options Count",
+          "type": "integer"
+        },
+        "term_months": {
+          "maximum": 1200,
+          "minimum": 1,
+          "title": "Term Months",
+          "type": "integer"
+        },
+        "notice_earliest_months": {
+          "maximum": 120,
+          "minimum": 0,
+          "title": "Notice Earliest Months",
+          "type": "integer"
+        },
+        "notice_latest_months": {
+          "maximum": 120,
+          "minimum": 0,
+          "title": "Notice Latest Months",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "options_count",
+        "term_months",
+        "notice_earliest_months",
+        "notice_latest_months"
+      ],
+      "title": "OptionValue",
+      "type": "object"
+    },
+    "RentFact": {
+      "additionalProperties": false,
+      "properties": {
+        "effective_from": {
+          "anyOf": [
+            {
+              "format": "date",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Effective From"
+        },
+        "effective_to": {
+          "anyOf": [
+            {
+              "format": "date",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Effective To"
+        },
+        "status": {
+          "const": "proposed",
+          "title": "Status",
+          "type": "string"
+        },
+        "uncertainty": {
+          "anyOf": [
+            {
+              "maxLength": 2000,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Uncertainty"
+        },
+        "evidence": {
+          "items": {
+            "$ref": "#/$defs/Evidence"
+          },
+          "maxItems": 10,
+          "minItems": 1,
+          "title": "Evidence",
+          "type": "array"
+        },
+        "fact_type": {
+          "const": "monthly_base_rent",
+          "title": "Fact Type",
+          "type": "string"
+        },
+        "value": {
+          "$ref": "#/$defs/RentValue"
+        }
+      },
+      "required": [
+        "effective_from",
+        "status",
+        "evidence",
+        "fact_type",
+        "value"
+      ],
+      "title": "RentFact",
+      "type": "object"
+    },
+    "RentValue": {
+      "additionalProperties": false,
+      "properties": {
+        "amount": {
+          "anyOf": [
+            {
+              "exclusiveMinimum": 0.0,
+              "type": "number"
+            },
+            {
+              "type": "string"
+            }
+          ],
+          "title": "Amount"
+        },
+        "currency": {
+          "const": "USD",
+          "title": "Currency",
+          "type": "string"
+        }
+      },
+      "required": [
+        "amount",
+        "currency"
+      ],
+      "title": "RentValue",
+      "type": "object"
+    },
+    "StartFact": {
+      "additionalProperties": false,
+      "properties": {
+        "effective_from": {
+          "anyOf": [
+            {
+              "format": "date",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Effective From"
+        },
+        "effective_to": {
+          "anyOf": [
+            {
+              "format": "date",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Effective To"
+        },
+        "status": {
+          "const": "proposed",
+          "title": "Status",
+          "type": "string"
+        },
+        "uncertainty": {
+          "anyOf": [
+            {
+              "maxLength": 2000,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Uncertainty"
+        },
+        "evidence": {
+          "items": {
+            "$ref": "#/$defs/Evidence"
+          },
+          "maxItems": 10,
+          "minItems": 1,
+          "title": "Evidence",
+          "type": "array"
+        },
+        "fact_type": {
+          "const": "lease_start",
+          "title": "Fact Type",
+          "type": "string"
+        },
+        "value": {
+          "$ref": "#/$defs/DateValue"
+        }
+      },
+      "required": [
+        "effective_from",
+        "status",
+        "evidence",
+        "fact_type",
+        "value"
+      ],
+      "title": "StartFact",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "document_filename": {
+      "maxLength": 255,
+      "minLength": 1,
+      "title": "Document Filename",
+      "type": "string"
+    },
+    "facts": {
+      "items": {
+        "discriminator": {
+          "mapping": {
+            "extension_option": "#/$defs/OptionFact",
+            "grace_period": "#/$defs/GraceFact",
+            "lease_end": "#/$defs/EndFact",
+            "lease_start": "#/$defs/StartFact",
+            "monthly_base_rent": "#/$defs/RentFact",
+            "rent_due_day": "#/$defs/DueFact"
+          },
+          "propertyName": "fact_type"
+        },
+        "oneOf": [
+          {
+            "$ref": "#/$defs/RentFact"
+          },
+          {
+            "$ref": "#/$defs/DueFact"
+          },
+          {
+            "$ref": "#/$defs/GraceFact"
+          },
+          {
+            "$ref": "#/$defs/StartFact"
+          },
+          {
+            "$ref": "#/$defs/EndFact"
+          },
+          {
+            "$ref": "#/$defs/OptionFact"
+          }
+        ]
+      },
+      "maxItems": 50,
+      "minItems": 1,
+      "title": "Facts",
+      "type": "array"
+    }
+  },
+  "required": [
+    "schema_version",
+    "document_filename",
+    "facts"
+  ],
+  "title": "ExtractionProposal",
+  "type": "object"
+}

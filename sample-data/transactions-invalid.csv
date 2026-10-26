@@ -1,0 +1,3 @@
+transaction_id,account_label,posted_date,description,amount
+SYN-INVALID-001,Orchard Row operating,2026-10-01,"FICTIONAL VALID ROW MUST ALSO BE ROLLED BACK",5050.00
+SYN-INVALID-002,Unknown fictional account,2026-02-30,"FICTIONAL INVALID ROW",10.001

@@ -1,6 +1,6 @@
 # Property Operations Workflow — Technical Design
 
-**Status:** Draft for the take-home prototype  
+**Status:** Implemented take-home prototype; see `EVALUATION.md` for verified behavior and limits.
 **Related product brief:** [`PRODUCT_BRIEF.md`](PRODUCT_BRIEF.md)  
 **Data policy:** Use fictional demo data only. Do not add family leases, bank statements, tenant information, credentials, or other private records to this repository.
 
@@ -98,6 +98,14 @@ The exact module boundaries can change during implementation if a simpler struct
 
 ## 5. Key workflows
 
+### Property and source-document intake
+
+The overview's **Add property from a lease** form creates manually entered property/tenant/account metadata and a source document atomically. It supports UTF-8 TXT and selectable-text PDF, preserving original bytes, SHA-256 fingerprint, media type, page count, and locally extracted text. `document_uploads` references the source row; originals remain inside the ignored SQLite database and can be downloaded through a property-scoped route. Existing properties can receive additional lease/amendment uploads. Startup does not require seeded properties for this flow.
+
+Uploads are limited to 10 MB, 100 pages, and 500,000 extracted text characters. Scans, empty-text PDF pages, encrypted PDFs, and unsupported formats are rejected before creating records. Repeated identical creation/upload requests reuse the existing source; conflicting metadata is held for correction. Property-prefixed reference filenames avoid collisions across common filenames. Source addition never creates an approved term or obligation. PDF text is extracted with pypdf; OCR and semantic/layout guarantees are excluded.
+
+TXT without explicit page markers is a single source page; PDF markers correspond to original pages. Extraction and validation allow the literal citation section `Page text` only on a page without numbered headings, while preserving strict numbered-section checks for the sample packet and other structured sources.
+
 ### 5.1 Lease extraction handoff
 
 1. The user opens a fictional lease or amendment in the app and copies its text, or opens the source file separately.
@@ -127,6 +135,14 @@ For the first slice, the matcher should favor transparent, explainable rules ove
 
 Only full payments receive automatic match proposals, and every proposal still requires approval before recording. Partial payments are handled through explicit manual allocation and approval. Approved allocations must be persisted so multiple payments can satisfy one obligation without reusing a transaction's allocated amount. An unidentified credit is not automatically combined with a partial payment simply because their total equals rent.
 
+Implemented in slice 3: the reconciliation workspace lets the user create one obligation per property and month, retaining integer-cent amounts, due/grace rules, fact references, evidence, and assumptions. It never regenerates an existing obligation. Unreviewed amendments pause creation after their document date until applicable terms are approved; pending amendment terms also block affected months. Mid-month changes and unsupported shorter-month due-day rules are held for review. Missing approved lease start/end dates are visible assumptions rather than inferred boundaries.
+
+CSV intake is atomic per file. It requires the five documented columns, nonempty account-scoped transaction identifiers, known fictional accounts, valid ISO dates, descriptions, and positive decimal USD amounts. UTF-8 BOM is accepted. Identical file digests are skipped; matching account/identifier/details in another file are skipped; changed details reject the whole file. Imports retain added/skipped counts and source-file fingerprints; each new transaction retains its import identity and physical source row. Uploads are limited to 2 MB and 10,000 rows. Importing does not create a match or a payment allocation; that remains slice 4.
+
+Implemented in slice 4: an explicit matching run persists full-payment proposals and unresolved transaction issues. Only exact amounts on the same account, entirely unpaid rent, and a unique transaction/obligation pairing in the selected month receive proposals. Rejected and withdrawn proposals are retained and not recreated. Every approval rechecks eligibility and available funds inside a SQLite write transaction. Manual allocations require an explicit target and evidence note; each deposit is allocated in full once, with no splitting or overpayments. Earlier unpaid months may be selected manually; later rent months are outside scope.
+
+Approved allocations link their review decision and retain a due/grace timing annotation. Balances derive from approved allocations; the selected review date excludes future-posted transactions from matching and recorded totals without freeing previously approved deposits for reuse. Exceptions retain original evidence/reason and append opening, update, and resolution events. A later approved payment can resolve a partial-payment balance while an unrelated credit remains open. `app/services/payments.py` holds these state transitions; CSV intake remains in `reconciliation.py`. No payment or exception is resolved merely by generating a proposal.
+
 ### 5.3 Needs Attention and reminder draft
 
 - The user selects an explicit “as of” date, with today as the default.
@@ -139,6 +155,12 @@ Matching explanations, the reconciliation report, and reminder drafts are determ
 
 No scheduler is required. The check runs when the user opens or refreshes the relevant view.
 
+Implemented in slice 5: `/attention` and the overview calculate rent and lease items against an explicit review date. App planning horizons (30 days for upcoming rent, 12 months for expiration, one calendar month for upcoming notice windows) are labeled separately from contractual deadlines. Beacon's approved notice window uses inclusive calendar-month arithmetic with end-of-month clamping. An optional staging action loads manually authored pending Beacon date/option proposals and a later fictional confirmation source; it never approves them automatically.
+
+`lease_option_events` records explicitly approved exercise dates, prior/new expirations, source quotations, snapshots of supporting approved terms, and review decisions. Exercise dates must lie within the approved notice window and not follow the review date; the stated new expiration must match the approved duration. Existing obligations and rent facts are unchanged. The recorded extension supports attention planning but does not carry base rent into an extension whose rent has not been approved.
+
+`/report` and `/report.md` generate a consistent read-only monthly brief, with approved amounts, pending transaction evidence, retained rent and lease-date citations, uncertainty, assumptions, exceptions/history, and next steps. HTML reminder drafts and Markdown export use deterministic templates. Drafts use approved balances, mention pending credits, and are never sent. No report-generation route changes approval or payment state.
+
 ## 6. Data model
 
 Use SQLite tables with foreign keys and timestamps. Keep the first schema small, but preserve enough provenance and history to explain how each current record was established.
@@ -147,6 +169,7 @@ Use SQLite tables with foreign keys and timestamps. Keep the first schema small,
 |---|---|---|
 | `properties` | `id`, `name`, `account_label`, `created_at` | Fictional property identity and bank-account label used only to match the synthetic feed |
 | `lease_documents` | `id`, `property_id`, `filename`, `document_type`, `document_date`, `text_content` or source reference | Source lease and amendment records with stable identity |
+| `document_uploads` | `document_id`, original filename/bytes, media type, digest, page count | Retained local upload evidence without replacing approved terms |
 | `lease_facts` | `id`, `property_id`, `document_id`, `fact_type`, `value_json`, `effective_from`, `effective_to`, `status`, `created_at` | Proposed and approved terms with effective dates |
 | `fact_evidence` | `id`, `lease_fact_id`, `page`, `section`, `quote` | Exact source evidence for each proposed or approved term |
 | `review_decisions` | `id`, `record_type`, `record_id`, `decision`, `reviewer_label`, `notes`, `created_at` | Approval, edit, or rejection history |
@@ -156,6 +179,7 @@ Use SQLite tables with foreign keys and timestamps. Keep the first schema small,
 | `match_proposals` | `id`, `transaction_id`, `obligation_id`, `proposed_amount`, `status`, `rationale`, `created_at` | Candidate matches and their human-reviewed outcome |
 | `payment_allocations` | `id`, `transaction_id`, `obligation_id`, `amount_cents`, `review_decision_id`, `created_at` | Approved full or partial payments; balances derive from these records |
 | `exceptions` | `id`, `property_id`, `transaction_id`, `obligation_id`, `kind`, `status`, `resolution_notes`, timestamps | Unresolved issues and retained resolution history |
+| `lease_option_events` | `property_id`, `option_fact_id`, `lease_end_fact_id`, `document_id`, `option_number`, `exercised_on`, `prior_expiration`, `new_expiration`, evidence/term snapshots, `review_decision_id` | Reviewed exercise history without assumed extension rent |
 
 The initial schema may combine or simplify tables where doing so keeps the app understandable. Do not collapse source evidence and approval history into a single mutable “current value” field. A later amendment must be able to propose a new effective value while preserving the previous value and its source.
 
@@ -188,6 +212,10 @@ The reusable skill should produce valid JSON, with no prose outside the JSON whe
 ```
 
 The schema is a proposed implementation contract, not a claim that the model is always correct. Missing fields, unsupported quotes, conflicting amendments, ambiguous effective dates, and invalid JSON should result in a visible validation/review error. The user may correct the proposal before approval.
+
+Implemented in slice 2: `app/models.py` defines the version 1.0 response; `skills/lease-extraction/contract.md` and generated `schema.json` describe it. USD amounts enter as decimal dollars and are stored as integer cents. Citation validation checks the supplied page and numbered section, tolerating whitespace differences only in quotations. The paste screen retains invalid input for correction; changes to staged facts use rejection and corrected resubmission. `extraction_submissions` retains the normalized proposal and digest to prevent repeated submissions from adding identical facts.
+
+Approving an amendment that overlaps one earlier approved term requires an explicit replacement acknowledgement. The earlier term's value and evidence remain stored; its inclusive end date becomes the day before the replacement begins. An appended decision records its full prior value and date range. Same-start conflicts, multiple overlapping terms, and temporary overrides are blocked. Unknown effective dates remain pending and require correction before approval. The reviewer must acknowledge evidence for every approval and explain decisions involving uncertainty. No existing obligation or allocation is changed by this workflow.
 
 ## 8. Responsibilities and safeguards
 
@@ -260,11 +288,19 @@ Record observed results and known limitations separately from expected benefits.
 
 Keep each step reviewable. Before each implementation slice, explain its purpose and files; after it, summarize behavior, decisions, and any manual run steps.
 
-## 12. Open implementation choices
+## 12. Implementation choices made
 
-- Whether lease text is stored in SQLite or retained as a file with a database reference. Prefer the simpler approach that still supports quote validation.
-- Whether a reviewer can edit extracted JSON inline or must correct and resubmit it. Prefer a clear review experience over a sophisticated editor.
-- Exact UI styling and application name.
-- Exact dependency and local run-command choices.
+- Source text is stored in SQLite, preserving page markers and stable document identity.
+- Invalid pasted JSON is retained for correction. Staged proposals are rejected and resubmitted to change their values; approved history is preserved.
+- The working title is “Property Operations,” with a small responsive stylesheet and server-rendered forms.
+- Runtime and development dependencies are listed in the requirements files. Python 3.9.6 and the README setup/run commands were verified in a fresh virtual environment.
 
-These choices should be made during implementation based on the smallest understandable design. They do not block the first working slice.
+`DEMO_WALKTHROUGH.md` provides the rehearsal sequence and expected checkpoints. `EVALUATION.md` distinguishes automated/observed results from the unmeasured live extraction quality and remaining manual browser checks.
+
+### Configurable property account labels
+
+Each property has an editable preferred CSV account label plus explicit accepted aliases. Comparison trims surrounding whitespace and uses Unicode case folding; no regex, fuzzy, memo, or LLM property matching is performed. `property_account_labels` stores normalized labels, immutable property ownership, and active status. Current labels on existing properties are recognized without a data reset. Retired labels remain reserved to the original property and valid for historical payment review, but cannot identify newly imported rows. Settings changes are atomic and recorded in `review_decisions`. Source transactions are never relabeled or reassigned. Duplicate transaction identifiers are scoped to property identity across aliases, enforced with a unique `(property_id, external_id)` index; conflicts reject the entire import. The prototype assumes one logical transaction-ID namespace per property; separate real bank feeds are outside scope.
+
+### Per-property rent ledger
+
+`/properties/{property_id}/ledger` provides a read-only ledger through a validated date. `app/services/ledger.py` reads a consistent SQLite snapshot of the property's saved obligations and approved allocations. Charge events occur on due dates; payment events occur on bank posted dates and retain the target obligation's rent month and due date, including arrears. Sort by event date, charges before payments, then stable record ID. Integer-cent running balances equal charges minus approved receipts; early payments may show a negative credit until the charge becomes due. The UI shows source transaction/review references, pending unallocated credits separately, and scheduled future obligations excluded from balances. No records, proposals, obligations, or approvals are created by viewing the ledger. Only saved base-rent obligations are covered; no historical opening balance or missing monthly charges are inferred. Through-date views use current approval decisions rather than reconstructing past reviewer knowledge. Property and overview pages link directly to separate ledgers.

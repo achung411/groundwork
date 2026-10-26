@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}Monthly reconciliation · Property Operations{% endblock %}
+{% block content %}
+<p class="eyebrow">Monthly reconciliation</p>
+<h1>Set expected rent. Bring in the evidence.</h1>
+<p class="intro">Review the evidence, approve supported payments, and keep unresolved items visible.</p>
+{% if errors %}<div class="notice error" role="alert"><strong>Review needed. No payment was recorded by this request.</strong><ul>{% for error in errors %}<li>{{ error }}</li>{% endfor %}</ul></div>{% endif %}
+{% if notice %}<div class="notice success" role="status">{{ notice }}</div>{% endif %}
+<form method="get" class="month-picker"><label for="period">Rent month</label><input type="month" id="period" name="period" value="{{ period }}" required><label for="as_of">Review date</label><input type="date" id="as_of" name="as_of" value="{{ as_of }}" required><button type="submit" class="secondary">Open review</button></form>
+<p><a href="/report?period={{ period }}&amp;as_of={{ as_of }}">Open monthly brief and unsent reminders for this review</a> · <a href="/attention?as_of={{ as_of }}">Needs Attention for this date</a></p>
+<div class="notice">Imported transactions and match proposals do not change recorded rent. Every payment requires approval. Transactions posted after {{ as_of }} cannot be recorded in this review.</div>
+<h2>Expected rent · {{ period }}</h2>
+<p>{{ obligation_count }} of {{ properties|length }} obligations created · Total expected from created obligations: <strong>{{ expected_cents|money }}</strong></p>
+<p>Recorded through {{ as_of }}: <strong>{{ paid_cents|money }}</strong> · Remaining rent: <strong>{{ remaining_cents|money }}</strong></p>
+{% for property in properties %}
+<article class="term">
+  <div class="term-heading"><h3><a href="/properties/{{ property.id }}">{{ property.name }}</a></h3><span class="badge">{% if property.obligation %}Obligation created{% else %}Not created{% endif %}</span></div>
+  {% set rent = property.obligation or property.preview %}
+  {% if rent %}
+    <p class="rent-summary"><strong>{{ rent.amount_cents|money }}</strong> · Due {{ rent.due_date }} · {% if rent.grace_days is not none %}{{ rent.grace_days }} calendar days grace{% else %}Grace period not specified{% endif %}</p>
+    {% if property.obligation %}
+      <p><strong>{{ rent.paid_cents|money }} recorded</strong> · {{ rent.remaining_cents|money }} remaining{% if rent.remaining_cents == 0 %} · Paid in full{% elif rent.paid_cents > 0 %} · Partially paid{% endif %}</p>
+      {% if rent.available_cents != rent.remaining_cents %}<p class="notice">Some approved allocations post after this review date. They are excluded above but still reserve those deposits against duplicate allocation.</p>{% endif %}
+      <p class="muted">Created {{ rent.created_at }}. These values will not be recalculated when terms change.</p>
+      <details><summary>Evidence and assumptions retained at creation</summary>
+        {% for term in rent.terms %}<h4>{{ term.fact_type|replace('_', ' ')|capitalize }} · {{ term.document_filename }}</h4><p class="muted">Effective {{ term.effective_from }}{% if term.effective_to %} through {{ term.effective_to }}{% endif %}</p>{% for evidence in term.evidence %}<p class="muted">Page {{ evidence.page }} · {{ evidence.section }}</p><blockquote>{{ evidence.quote }}</blockquote>{% endfor %}{% if term.uncertainty %}<p>Reviewed uncertainty: {{ term.uncertainty }}</p>{% endif %}{% endfor %}
+        <h4>Assumptions and missing terms</h4><ul>{% for assumption in rent.assumptions %}<li>{{ assumption }}</li>{% else %}<li>No additional assumptions recorded.</li>{% endfor %}</ul>
+      </details>
+    {% else %}
+      <p class="muted">Preview from approved terms. Nothing has been created yet.</p>
+      <ul class="muted">{% for assumption in rent.assumptions %}<li>{{ assumption }}</li>{% endfor %}</ul>
+      <form method="post" action="/reconciliation/obligations"><input type="hidden" name="period" value="{{ period }}"><input type="hidden" name="as_of" value="{{ as_of }}"><input type="hidden" name="property_id" value="{{ property.id }}"><button type="submit">Create {{ period }} rent for {{ property.name }}</button></form>
+    {% endif %}
+  {% else %}<p class="notice">{{ property.blocked_reason }}</p><a href="/properties/{{ property.id }}/lease-review">Review lease terms</a>{% endif %}
+</article>
+{% endfor %}
+<section class="panel">
+<h2>Import fictional transactions</h2>
+<p>Choose <code>sample-data/transactions-2026-10.csv</code>, or another synthetic file using the same five columns. UTF-8 CSV only; 2 MB maximum. Invalid rows block the entire import.</p>
+<form method="post" action="/reconciliation/import" enctype="multipart/form-data">
+  <input type="hidden" name="period" value="{{ period }}">
+  <input type="hidden" name="as_of" value="{{ as_of }}">
+  <label for="transaction_file">Transaction CSV</label><input id="transaction_file" name="transaction_file" type="file" accept=".csv,text/csv" required>
+  <button type="submit">Validate and import CSV</button>
+</form>
+<details><summary>CSV format and duplicate rules</summary><p>Required columns: <code>transaction_id,account_label,posted_date,description,amount</code>. Each row needs an identifier, an existing fictional account label, a YYYY-MM-DD posted date, a description, and a positive USD amount with at most two decimal places.</p><p>Identical files are skipped. A repeated identifier on the same property (including across its label aliases) is skipped if all transaction details match; conflicting details block the entire file. The same identifier on a different property is allowed. Configure accepted labels from the property’s lease records; matching ignores capitalization and surrounding spaces. Amount alone never establishes a duplicate or a payment match.</p></details>
+</section>
+{% include "payment_review.html" %}
+<h2>Imported transactions · {{ period }} <span class="count">{{ transactions|length }}</span></h2>
+<p>Only posted dates in the selected month are shown. A file may contain transactions for other months.</p>
+{% if transactions %}<div class="table-scroll"><table><caption class="sr-only">Imported transactions for {{ period }}</caption><thead><tr><th>Posted</th><th>Property / account</th><th>Description / ID</th><th>Amount</th><th>Source</th></tr></thead><tbody>
+{% for transaction in transactions %}<tr><td>{{ transaction.posted_date }}</td><td>{{ transaction.property_name }}<br><span class="muted">{{ transaction.account_label }}</span></td><td>{{ transaction.description }}<br><span class="muted">{{ transaction.external_id }}</span></td><td class="amount">{{ transaction.amount_cents|money }}</td><td>{{ transaction.filename }}<br><span class="muted">Row {{ transaction.source_row }} · Import #{{ transaction.import_id }}</span></td></tr>{% endfor %}
+</tbody></table></div>{% else %}<p class="notice">No transactions imported for this month.</p>{% endif %}
+<h2>Import history · All months</h2>
+{% for run in imports %}<details><summary>{{ run.filename }} · {{ run.imported_count }} added · {{ run.skipped_count }} skipped</summary><p>Import #{{ run.id }} · {{ run.imported_at }} · {{ run.row_count }} source rows</p><p class="muted">File fingerprint: <code>{{ run.content_digest }}</code></p></details>{% else %}<p>No files imported yet.</p>{% endfor %}
+{% include "payment_history.html" %}
+{% endblock %}

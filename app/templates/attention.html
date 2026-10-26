@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}Needs Attention · Property Operations{% endblock %}
+{% block content %}
+<p class="eyebrow">Needs Attention</p><h1>Review the dates that matter.</h1>
+<p class="intro">Calculated from approved terms and reviewed payments when you open this page. No background scheduler or message delivery.</p>
+{% if error %}<div class="notice error" role="alert">{{ error }}</div>{% endif %}
+{% if notice %}<div class="notice success" role="status">{{ notice }}</div>{% endif %}
+<form method="get" class="month-picker"><label for="as_of">Review date</label><input type="date" id="as_of" name="as_of" value="{{ as_of }}" required><button type="submit" class="secondary">Run attention check</button></form>
+<p class="muted">Upcoming rent: 30 days · Expiration planning: 12 months · Upcoming notice windows: one calendar month. These display horizons do not alter contractual dates.</p>
+{% include "attention_items.html" %}
+<section class="panel"><h2>Fictional option walkthrough</h2><p>Stage three manually authored Beacon date/option proposals and its fictional exercise-confirmation document. This does not approve terms or record an exercise. You can instead extract Beacon's terms live through the lease skill.</p>
+<p>Before exercise, the approved notice window is August 31–November 30, 2026. After reviewing its September 15 exercise confirmation, the sole option is exhausted and the recorded extended expiration is August 31, 2030. Extension rent remains unestablished.</p>
+<form method="post" action="/attention/demo-fixtures"><input type="hidden" name="as_of" value="{{ as_of }}"><button type="submit" class="secondary">Stage fictional attention examples</button></form>
+<p><a href="/properties/2/lease-review?document_id={{ demo_document_id }}">Review Beacon's proposed date and option terms</a>. Loading the confirmation source leaves it unresolved until a reviewed exercise or applicable fact approval.</p></section>
+<h2>Approved lease dates and exercise history</h2>
+{% for lease in attention.leases %}
+<article class="term" id="lease-{{ lease.property.id }}"><h3>{{ lease.property.name }}</h3>
+{% if lease.expiration %}<p><strong>Recorded expiration: {{ lease.expiration }}</strong>{% if lease.remaining_options is not none %} · {{ lease.remaining_options }} approved option(s) remaining{% endif %}</p>{% endif %}
+{% if lease.window_start %}<p>Next notice window: {{ lease.window_start }} through {{ lease.window_end }}, inclusive. No exercise is assumed.</p>{% endif %}
+{% for gap in lease.gaps %}<p class="notice">{{ gap }}</p>{% endfor %}
+{% for term in lease.evidence %}<details><summary>{{ term.fact_type|replace('_',' ')|capitalize }} · {{ term.document_filename }}</summary>{% for evidence in term.evidence %}<p>Page {{ evidence.page }} · {{ evidence.section }}</p><blockquote>{{ evidence.quote }}</blockquote>{% endfor %}</details>{% endfor %}
+{% for event in lease.event_records %}<details><summary>Reviewed exercise #{{ event.option_number }} · {{ event.exercised_on }}{% if event.exercised_on > as_of %} · After review date{% endif %}</summary><p>Expiration {{ event.prior_expiration }} → {{ event.new_expiration }}</p><p>{{ event.source.document_filename }} · Page {{ event.source.page }} · {{ event.source.section }}</p><blockquote>{{ event.source.quote }}</blockquote><p>{{ event.notes }}</p><p class="muted">Approved {{ event.created_at }} · Review decision #{{ event.review_decision_id }}. This event does not set extension rent or change existing obligations.</p></details>{% else %}<p>No reviewed option exercise recorded. Time passing does not establish exercise.</p>{% endfor %}
+{% if lease.option_fact and lease.end_fact and lease.remaining_options and not lease.gaps and lease.next_expiration %}
+<details><summary>Record an option exercise after reviewing its source</summary>
+<p>Next option duration gives {{ lease.next_expiration }} as the expected new expiration. Confirm that date against the source. This does not approve extension rent or update rent obligations.</p>
+{% for document in lease.documents %}<details><summary>Read source: {{ document.filename }}</summary><pre>{{ document.text_content }}</pre></details>{% endfor %}
+{% set saved = form_values if form_values.property_id == lease.property.id else {} %}
+<form method="post" action="/attention/properties/{{ lease.property.id }}/exercise">
+<input type="hidden" name="as_of" value="{{ as_of }}"><input type="hidden" name="option_fact_id" value="{{ lease.option_fact.id }}"><input type="hidden" name="lease_end_fact_id" value="{{ lease.end_fact.id }}">
+<label for="exercise-doc-{{ lease.property.id }}">Exercise source for {{ lease.property.name }}</label><select id="exercise-doc-{{ lease.property.id }}" name="document_id" required><option value="">Choose source explicitly</option>{% for document in lease.documents %}<option value="{{ document.id }}" {% if saved.document_id == document.id %}selected{% endif %}>{{ document.filename }}</option>{% endfor %}</select>
+<label for="exercise-date-{{ lease.property.id }}">Exercise date for {{ lease.property.name }}</label><input id="exercise-date-{{ lease.property.id }}" name="exercised_on" type="date" value="{{ saved.exercised_on or '' }}" required>
+<label for="new-expiration-{{ lease.property.id }}">New expiration from source for {{ lease.property.name }}</label><input id="new-expiration-{{ lease.property.id }}" name="new_expiration" type="date" value="{{ saved.new_expiration or '' }}" required>
+<label for="exercise-page-{{ lease.property.id }}">Source page for {{ lease.property.name }}</label><input id="exercise-page-{{ lease.property.id }}" name="page" type="number" min="1" value="{{ saved.page or 1 }}" required>
+<label for="exercise-section-{{ lease.property.id }}">Source section for {{ lease.property.name }}</label><input id="exercise-section-{{ lease.property.id }}" name="section" type="text" maxlength="300" value="{{ saved.section or '' }}" required>
+<label for="exercise-quote-{{ lease.property.id }}">Exact source quotation for {{ lease.property.name }}</label><textarea id="exercise-quote-{{ lease.property.id }}" name="quote" rows="4" maxlength="6000" required>{{ saved.quote or '' }}</textarea>
+<label for="exercise-notes-{{ lease.property.id }}">Exercise review notes for {{ lease.property.name }}</label><textarea id="exercise-notes-{{ lease.property.id }}" name="notes" rows="2" maxlength="4000" required>{{ saved.notes or '' }}</textarea>
+<label class="check"><input type="checkbox" name="acknowledge" value="true" required> I reviewed the exercise evidence, notice-window dates, and extended expiration and approve this event.</label><button type="submit">Approve reviewed exercise for {{ lease.property.name }}</button>
+</form></details>{% endif %}
+</article>{% endfor %}
+{% endblock %}

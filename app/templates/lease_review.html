@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}Lease review · {{ property.name }}{% endblock %}
+{% block content %}
+<a href="/properties/{{ property.id }}">← {{ property.name }} records and history</a>
+<p class="eyebrow">Lease review</p>
+<h1>Extract, verify, then approve.</h1>
+<p class="intro">{{ property.name }} · AI proposes terms in your separate ChatGPT session. You decide what becomes approved.</p>
+<p><a href="/properties/{{ property.id }}/documents/new">Add another lease or amendment</a></p>
+{% if error %}<div class="notice error" role="alert"><strong>Review needed.</strong> {{ error }}</div>{% endif %}
+{% if notice %}<div class="notice success" role="status">{{ notice }}</div>{% endif %}
+<form method="get" class="panel">
+  <label for="document_id">Source document</label>
+  <select name="document_id" id="document_id">{% for source in documents %}<option value="{{ source.id }}" {% if source.id == document.id %}selected{% endif %}>{{ source.filename }}</option>{% endfor %}</select>
+  <button type="submit" class="secondary">Open document</button>
+</form>
+<details><summary>1. Copy the extraction prompt for ChatGPT</summary>
+  <p>This combines the reusable skill, response contract, and selected fictional source. Copy it into a separate ChatGPT session and ask it to perform the extraction. The app makes no model call.</p>
+  <label for="extraction_prompt">Complete extraction prompt</label>
+  <textarea id="extraction_prompt" readonly rows="14">{{ prompt }}</textarea>
+  <button type="button" data-copy="extraction_prompt">Copy extraction prompt</button>
+  <p class="muted" role="status" id="copy_status"></p>
+</details>
+<details><summary>Read the selected source: {{ document.filename }}</summary><pre>{{ document.text_content }}</pre></details>
+{% if upload %}<div class="notice"><strong>Uploaded source:</strong> {{ upload.original_filename }} · {{ upload.page_count }} page(s). <a href="/properties/{{ property.id }}/documents/{{ document.id }}/original">Download original</a>. Check the text above against the original before relying on extraction; PDF reading order can vary. The reference filename in the JSON must be <code>{{ document.filename }}</code>.</div>{% endif %}
+<section class="panel">
+<h2>2. Paste the JSON response</h2>
+<p>Copy the object from <code>{</code> through its closing <code>}</code>. Leave out code fences and any surrounding commentary. You may also write or correct a proposal manually using the same format.</p>
+<form method="post">
+  <input type="hidden" name="document_id" value="{{ document.id }}">
+  <label for="proposal_json">Lease extraction JSON</label>
+  <textarea id="proposal_json" name="proposal_json" rows="12" maxlength="150000" required placeholder='{"schema_version":"1.0","document_filename":"{{ document.filename }}","facts":[...]}' spellcheck="false">{{ raw }}</textarea>
+  <button type="submit">Validate and stage for review</button>
+</form>
+<p class="muted">The whole response must validate. Importing never approves a term. Repeating an identical submission adds no duplicate facts.</p>
+</section>
+<h2>3. Review proposals for this document</h2>
+<p>Check the value, effective dates, and every quoted passage. Quote matching checks text location; it does not prove the interpretation or that a document is executed.</p>
+{% for fact in facts %}
+{% set label, value = fact.fact_type|fact_label(fact.value_json) %}
+<article class="term" id="fact-{{ fact.id }}">
+  <div class="term-heading"><h3>{{ label }} <span class="value">{{ value }}</span></h3><span class="badge">{% if fact.status == 'proposed' %}Pending review{% else %}{{ fact.status|capitalize }}{% endif %}</span></div>
+  <p class="muted">Proposal #{{ fact.id }} · Effective {{ fact.effective_from or 'date not established' }}{% if fact.effective_to %} through {{ fact.effective_to }}{% endif %}</p>
+  {% for evidence in fact.evidence %}<p class="muted">{{ document.filename }} · Page {{ evidence.page }} · {{ evidence.section }} · Quotation verified</p><blockquote>{{ evidence.quote }}</blockquote>{% endfor %}
+  {% if fact.uncertainty %}<div class="notice"><strong>Uncertainty:</strong> {{ fact.uncertainty }}</div>{% endif %}
+  {% if fact.status == 'proposed' %}
+    {% set overlaps = approved_facts|selectattr('fact_type', 'equalto', fact.fact_type)|list %}
+    {% if overlaps %}<details><summary>Compare existing approved terms</summary>{% for prior in overlaps %}{% set plabel, pvalue = prior.fact_type|fact_label(prior.value_json) %}<p>#{{ prior.id }} · {{ pvalue }} · {{ prior.effective_from }} through {{ prior.effective_to or 'open end' }} · {{ prior.filename }}</p>{% endfor %}</details>{% endif %}
+    <form method="post" action="/properties/{{ property.id }}/facts/{{ fact.id }}/review">
+      <label for="notes-{{ fact.id }}">Review notes{% if fact.uncertainty %} (required to approve uncertainty){% endif %}</label>
+      <textarea id="notes-{{ fact.id }}" name="notes" rows="2" maxlength="4000">{% if posted_fact == fact.id %}{{ posted_notes }}{% endif %}</textarea>
+      <label class="check"><input type="checkbox" name="acknowledge" value="true"> I reviewed the source evidence, effective dates, and any uncertainty.</label>
+      {% if document.document_type == 'amendment' %}<label class="check"><input type="checkbox" name="replace" value="true"> If this overlaps an earlier approved term, replace it from this effective date and retain its prior value and history.</label>{% endif %}
+      <div class="actions"><button type="submit" name="decision" value="approved">Approve term</button><button type="submit" class="secondary" name="decision" value="rejected">Reject proposal</button></div>
+    </form>
+    <p class="muted">To edit: reject this proposal, correct the JSON above, then resubmit. Existing obligations and payments are not recalculated.</p>
+  {% else %}<p><a href="/properties/{{ property.id }}">View approval and decision history</a></p>{% endif %}
+</article>
+{% else %}<p class="notice">No proposals submitted for this document yet.</p>{% endfor %}
+<script src="{{ url_for('static', path='/lease-review.js') }}" defer></script>
+{% endblock %}

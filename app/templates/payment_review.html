@@ -1,0 +1,45 @@
+<section class="panel" id="payment-review">
+<h2>Payment review</h2>
+<p>Full-payment proposals require an exact amount, the same property account, an entirely unpaid obligation, and a unique candidate for this month. Memo text is shown for your review; the app does not infer payer identity.</p>
+<form method="post" action="/reconciliation/matching"><input type="hidden" name="period" value="{{ period }}"><input type="hidden" name="as_of" value="{{ as_of }}"><button type="submit">Run matching for {{ period }}</button></form>
+<p class="muted">Running matching saves proposals and unresolved issues. It does not record a payment. Rejected or withdrawn proposals are retained and are not automatically recreated.</p>
+{% for proposal in payment_state.proposals %}
+<details {% if proposal.status == 'proposed' %}open{% endif %}>
+  <summary>{{ proposal.property_name }} · {{ proposal.proposed_amount_cents|money }} · {% if proposal.status == 'proposed' %}Pending approval{% else %}{{ proposal.status|capitalize }}{% endif %}</summary>
+  <p><strong>{{ proposal.external_id }}</strong> · Posted {{ proposal.posted_date }} · Rent month {{ proposal.period }}</p>
+  <blockquote>{{ proposal.description }}</blockquote><p>{{ proposal.rationale }}</p>
+  {% if proposal.status == 'proposed' %}
+    {% if not proposal.eligible %}<div class="notice">This proposal no longer meets the full-payment rules. Run matching again or allocate manually with supporting evidence.</div>{% endif %}
+    <form method="post" action="/reconciliation/proposals/{{ proposal.id }}">
+      <input type="hidden" name="period" value="{{ period }}"><input type="hidden" name="as_of" value="{{ as_of }}">
+      <label for="match-notes-{{ proposal.id }}">Review notes for {{ proposal.external_id }} (required to reject)</label>
+      <textarea id="match-notes-{{ proposal.id }}" name="notes" rows="2" maxlength="4000">{% if form_values.proposal_id == proposal.id %}{{ form_values.notes }}{% endif %}</textarea>
+      <label class="check"><input type="checkbox" name="acknowledge" value="true"> I verified {{ proposal.external_id }}, the {{ proposal.proposed_amount_cents|money }} amount, and {{ proposal.period }} rent.</label>
+      <div class="actions">{% if proposal.eligible %}<button type="submit" name="action" value="approve">Approve payment {{ proposal.external_id }}</button>{% endif %}<button type="submit" name="action" value="reject" class="secondary">Reject match {{ proposal.external_id }}</button></div>
+    </form>
+  {% endif %}
+  {% for review in proposal.decisions %}<p class="muted">{{ review.created_at }} · {{ review.reviewer_label }} · {{ review.decision }}<br>{{ review.notes }}</p>{% endfor %}
+</details>
+{% else %}<p>No full-payment proposals saved for this month and review date. Import transactions and run matching.</p>{% endfor %}
+</section>
+<h2>Manual allocation · {{ period }}</h2>
+<p>For partial payments, remaining balances, ambiguous credits, and arrears, explicitly select the rent month and explain your evidence. The entire deposit goes to one obligation. Overpayments, reversals, and splitting a deposit are outside scope.</p>
+{% for transaction in payment_state.transactions %}
+<details>
+  <summary>{{ transaction.property_name }} · {{ transaction.amount_cents|money }} · {{ transaction.external_id }} · {% if transaction.allocation %}Recorded{% elif transaction.future %}After review date{% else %}Unallocated{% endif %}</summary>
+  <p>Posted {{ transaction.posted_date }}</p><blockquote>{{ transaction.description }}</blockquote>
+  {% if transaction.allocation %}<p>Allocated to {{ transaction.allocation.period }} rent. {{ transaction.allocation.timing_label }}.</p>{% if transaction.future %}<p class="notice">This approved deposit posts after the review date and is excluded from recorded totals above.</p>{% endif %}
+  {% elif transaction.future %}<p class="notice">Posted after {{ as_of }}. Choose a later review date before approving this transaction.</p>
+  {% elif transaction.targets %}
+    <form method="post" action="/reconciliation/allocations">
+      <input type="hidden" name="period" value="{{ period }}"><input type="hidden" name="as_of" value="{{ as_of }}"><input type="hidden" name="transaction_id" value="{{ transaction.id }}">
+      <label for="target-{{ transaction.id }}">Rent obligation for {{ transaction.external_id }}</label>
+      <select name="obligation_id" id="target-{{ transaction.id }}" required><option value="">Choose an obligation explicitly</option>{% for target in transaction.targets %}<option value="{{ target.id }}" {% if form_values.transaction_id == transaction.id and form_values.obligation_id == target.id %}selected{% endif %}>{{ target.property_name }} · {{ target.period }} · {{ target.available_cents|money }} available balance</option>{% endfor %}</select>
+      <label for="allocation-notes-{{ transaction.id }}">Evidence and allocation reason for {{ transaction.external_id }}</label>
+      <textarea id="allocation-notes-{{ transaction.id }}" name="notes" rows="2" maxlength="4000" required>{% if form_values.transaction_id == transaction.id %}{{ form_values.notes }}{% endif %}</textarea>
+      <label class="check"><input type="checkbox" name="acknowledge" value="true" required> I approve allocating the entire {{ transaction.amount_cents|money }} deposit to the selected rent obligation.</label>
+      <button type="submit">Approve manual allocation {{ transaction.external_id }}</button>
+    </form>
+  {% else %}<p class="notice">No eligible obligation has enough remaining balance on this property account. Create or review its obligations; do not force an overpayment or combine unrelated credits.</p>{% endif %}
+</details>
+{% else %}<p>No imported transactions for this month.</p>{% endfor %}

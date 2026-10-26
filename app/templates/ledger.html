@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Rent ledger · {{ property.name }}{% endblock %}
+{% block content %}
+<a href="/properties/{{ property.id }}">← {{ property.name }}</a>
+<p class="eyebrow">Property account</p>
+<h1>Rent ledger</h1>
+<p class="intro">{{ property.name }} · {{ property.tenant_name }}</p>
+<form method="get" class="month-picker"><label for="ledger-date">Through date</label><input type="date" id="ledger-date" name="as_of" value="{{ ledger.as_of }}" required><button type="submit">Update ledger</button></form>
+{% if error %}<p class="notice error" role="alert">{{ error }}</p>{% endif %}
+<div class="cards ledger-summary">
+<article class="card"><p class="eyebrow">Rent charged</p><h2>{{ ledger.charged_cents|money }}</h2><p>Due through {{ ledger.as_of }}</p></article>
+<article class="card"><p class="eyebrow">Approved payments</p><h2>{{ ledger.received_cents|money }}</h2><p>Received through {{ ledger.as_of }}</p></article>
+<article class="card"><p class="eyebrow">Rent balance owed</p><h2>{{ ledger.balance_cents|money }}</h2><p>Charges less approved payments</p></article>
+</div>
+<h2>Account activity</h2>
+<p>Oldest first. Rent charges increase the balance on their due dates; approved payments reduce it on their received dates. The bank posted date is used as the received date. Charges appear before payments on the same day. A negative balance is a credit, such as rent received before its due date.</p>
+<details><summary>Ledger coverage and date rules</summary><p class="muted">USD base rent only. This ledger includes saved rent obligations, not automatically calculated charges for every lease month. It starts at zero before the first saved entry; earlier balances, fees, and other charges are not included. The selected date filters due and posted dates using current approvals, rather than reconstructing what was known at that time.</p></details>
+{% if ledger.rows %}
+<div class="table-scroll" role="region" aria-label="Property rent ledger" tabindex="0"><table class="ledger-table">
+<caption class="sr-only">{{ property.name }} rent ledger through {{ ledger.as_of }}</caption>
+<thead><tr><th scope="col">Entry date</th><th scope="col">Rent month</th><th scope="col">Due date</th><th scope="col">Entry type</th><th scope="col">Received date</th><th scope="col" class="amount">Rent charged</th><th scope="col" class="amount">Amount received</th><th scope="col" class="amount">Balance owed</th><th scope="col">Reference</th></tr></thead>
+<tbody>{% for row in ledger.rows %}<tr><td>{{ row.event_date }}</td><td>{{ row.period }}</td><td>{{ row.due_date }}</td><td>{{ row.kind }}</td><td>{{ row.received_date or '—' }}</td><td class="amount">{% if row.charged_cents %}{{ row.charged_cents|money }}{% else %}—{% endif %}</td><td class="amount">{% if row.received_cents %}{{ row.received_cents|money }}{% else %}—{% endif %}</td><td class="amount"><strong>{{ row.balance_cents|money }}</strong></td><td>{{ row.reference }}{% if row.decision_id %}<br><span class="muted">Review decision #{{ row.decision_id }}</span><details><summary>Payment details</summary>{{ row.description }}</details>{% endif %}<br><a href="/reconciliation?period={{ row.received_date[:7] if row.received_date else row.period }}&amp;as_of={{ ledger.as_of }}">{{ 'Review payment' if row.received_date else 'Review rent' }}</a></td></tr>{% endfor %}</tbody>
+<tfoot><tr><th scope="row" colspan="5">Totals through {{ ledger.as_of }}</th><td class="amount">{{ ledger.charged_cents|money }}</td><td class="amount">{{ ledger.received_cents|money }}</td><td class="amount"><strong>{{ ledger.balance_cents|money }}</strong></td><td></td></tr></tfoot>
+</table></div>
+{% else %}<p class="notice">No rent ledger entries through this date. <a href="/reconciliation?period={{ ledger.as_of[:7] }}&amp;as_of={{ ledger.as_of }}">Create rent obligations and review payments</a> to add entries.</p>{% endif %}
+<h2>Credits awaiting approval</h2>
+<p>These imported credits do not reduce the ledger balance until a payment allocation is approved.</p>
+{% if ledger.pending %}<p><strong>{{ ledger.pending_cents|money }}</strong> awaiting review across {{ ledger.pending|length }} transaction(s).</p>{% for transaction in ledger.pending %}<p>{{ transaction.posted_date }} · {{ transaction.amount_cents|money }} · {{ transaction.external_id }}<br>{{ transaction.description }} · <a href="/reconciliation?period={{ transaction.posted_date[:7] }}&amp;as_of={{ ledger.as_of }}">Review transaction</a></p>{% endfor %}{% else %}<p>No unallocated credits through this date.</p>{% endif %}
+{% if ledger.upcoming %}<h2>Scheduled rent</h2><p>Saved obligations due after {{ ledger.as_of }} are excluded from the running balance.</p>{% for obligation in ledger.upcoming %}<p>{{ obligation.period }} · Due {{ obligation.due_date }} · {{ obligation.amount_cents|money }}</p>{% endfor %}{% endif %}
+{% endblock %}

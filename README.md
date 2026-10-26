@@ -1,0 +1,79 @@
+# Property Operations
+
+A local interview prototype for reviewing fictional commercial lease terms, reconciling rent transactions, and preparing follow-up with evidence and human approval.
+
+Python/FastAPI serves HTML pages; SQLite preserves sources, effective terms, review decisions, payment allocations, and exception history. Lease extraction runs manually in a separate ChatGPT session. Matching, arithmetic, date checks, reports, and reminders use deterministic code. No model API credentials are needed.
+
+## Run locally
+
+Tested with Python 3.9.6 on macOS. From the repository folder:
+
+```sh
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install -r requirements-dev.txt
+python -m app.db init
+python -m uvicorn app.main:app --host 127.0.0.1 --port 8000
+```
+
+Open [the local app](http://127.0.0.1:8000). Ctrl+C stops the server. In later sessions, activate `.venv` and run the Uvicorn command. `requirements.txt` contains runtime dependencies; `requirements-dev.txt` includes test tools.
+
+A fresh database contains three fictional properties, four source documents, and seven explicitly labeled pre-reviewed base terms. Orchard's rent amendment starts unapproved. Page visits never create obligations or record payments.
+
+## Add a property from a lease
+
+On Overview, click **Add property from a lease**. Enter the property/tenant names, source document date, and an optional fictional account label used by CSV imports. Upload a selectable-text PDF or UTF-8 TXT file. The property and retained source are saved together, then the app opens lease review. No terms or obligations are automatically approved or created.
+
+The same flow works on an empty database without running the sample seeding command. Existing property pages also offer **Add lease document** for a later lease or amendment. Uploads preserve the original bytes and a file fingerprint in the ignored local database; the source can be downloaded from the review screen. Repeated uploads do not overwrite records or create duplicates. Reference filenames distinguish files with the same original name on different properties; use the reference shown in the extraction prompt.
+
+PDF/TXT intake allows up to 10 MB, 100 pages, and 500,000 extracted characters. Password-protected PDFs, scans/image-only or blank PDF pages, and DOCX are unsupported. Compare PDF-extracted text with the original before reviewing terms. TXT files without page markers become one source page; existing sequential page markers are preserved. On unnumbered pages the citation section is `Page text`; numbered pages still require an actual numbered heading. Use fictional leases only. [Harbor Court](sample-data/leases/harbor-court-lease.txt) is an unnumbered example for trying this flow.
+
+## Demonstrate the workflow
+
+Follow [DEMO_WALKTHROUGH.md](DEMO_WALKTHROUGH.md) for an isolated rehearsal, the interview sequence, expected balances, and edge cases.
+
+1. **Lease review:** copy the complete extraction prompt into ChatGPT. Paste just its JSON object into the app; review citations, effective dates, and uncertainty before approving. The reusable [skill](skills/lease-extraction/SKILL.md), [response contract](skills/lease-extraction/contract.md), and [JSON Schema](skills/lease-extraction/schema.json) are included. The copyable prompt works without installing the repository skill into ChatGPT.
+2. **Reconciliation:** select October 2026 and an explicit review date, create obligations from approved terms, and import the [fictional CSV](sample-data/transactions-2026-10.csv). Full-payment proposals require approval. Partial payments and ambiguous credits require an explicit target and evidence note.
+3. **Needs Attention:** calculate due/grace and lease-date items from approved records. Optional fictional examples stage Beacon's date/option proposals; approving them and a cited exercise event demonstrates an open notice window and exhausted options.
+4. **Report:** review approved balances, pending credits, citations, assumptions, exceptions, and next steps. Download the Markdown brief or copy an unsent reminder to edit outside the app.
+
+Read [sample-data/README.md](sample-data/README.md) for fixture purposes. Use only fictional records.
+
+## Persistence and reset
+
+The ignored runtime database is `data/property-operations.sqlite3`. Startup creates missing tables without seeding or replacing records. `python -m app.db init` seeds only an empty property table. `PROPERTY_DB_PATH` selects a separate database for tests or rehearsal; the walkthrough shows how to preserve your working demo.
+
+To deliberately discard the selected database's demo records, stop its server, confirm the intended `PROPERTY_DB_PATH`, then run:
+
+```sh
+python -m app.db reset --confirm
+```
+
+There is no browser reset button. Source documents, approved prior terms, decisions, and resolved issues remain available during ordinary use.
+
+## Verification
+
+```sh
+python -m pytest -q
+python -m pip check
+```
+
+The suite uses temporary databases. It covers consequential state transitions and boundaries, including a complete HTTP rehearsal through amendment approval, CSV upload, full/partial payments, later resolution, reviewed option exercise, Markdown export, and restart. See [EVALUATION.md](EVALUATION.md) for observed results, time records, and verification limits.
+
+## Scope and limits
+
+One active lease per property, USD base rent only. Posted date stands in for receipt. Unknown grace is never zero by assumption. Unallocated credits are not recorded payments; the selected review date filters posted evidence, not historical reviewer knowledge.
+
+Amendments affect new obligations; existing obligation values/evidence are retained. Mid-month changes, proration, deposit splitting, overpayments, reversals, and notice-window waivers require additional work. An option exercise does not establish extension rent. Missing terms stay visible for review.
+
+This is a fictional-data prototype: no authentication, production safeguards, real bank access, message sending, cloud deployment, or background scheduler. No measured business benefit or production-readiness claim is made.
+
+The [product brief](PRODUCT_BRIEF.md), [technical design](TECHNICAL_DESIGN.md), and [implementation plan](IMPLEMENTATION_PLAN.md) explain the decisions and completed slices.
+
+### Configure transaction labels
+
+Open a property and choose **Configure transaction labels** to edit its preferred CSV `account_label` and accepted aliases (one per line). Matching ignores case and surrounding whitespace; other characters must match exactly. Labels are unique to a property and remain reserved after removal. Removed labels stop accepting new transactions, while imported records keep their source label and property assignment. Changes are recorded in label history. A repeated transaction ID on the same property is checked across all its aliases, so a renamed label cannot duplicate a deposit. No AI or description matching is used.
+
+### Property rent ledgers
+
+Choose **View rent ledger** on an overview property card or property page. Each property has its own chronological ledger of saved rent charges and approved payments, with the rent month, due date, received date (bank posted date), charged/received amounts, source reference, and running balance owed. Charges enter on their due dates; payments enter on posted dates. Partial payments and payments toward older rent remain separate entries. The through-date control excludes later charges/payments; early payments can create a temporary credit. Imported credits awaiting approval are shown separately and never reduce the balance. Scheduled obligations are listed outside the balance. The view is read-only and starts at zero before the first saved entry: it does not generate missing monthly obligations or infer an opening balance, fees, or other charges.

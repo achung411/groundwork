@@ -17,3 +17,10 @@
 
 # Locally installed helper tools
 .tools/
+
+# Python runtime and generated data
+.venv/
+__pycache__/
+.pytest_cache/
+*.py[cod]
+/data/

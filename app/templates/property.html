@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}{{ property.name }} · Property Operations{% endblock %}
+{% block content %}
+<a href="/">← All properties</a>
+<p class="eyebrow">Lease records</p>
+<h1>{{ property.name }}</h1>
+<p class="intro">{{ property.tenant_name }} · {{ property.account_label }}</p>
+<a class="button" href="/properties/{{ property.id }}/lease-review">Extract and review lease terms</a>
+<a class="button secondary-link" href="/properties/{{ property.id }}/documents/new">Add lease document</a>
+<p><a href="/properties/{{ property.id }}/matching">Configure transaction labels</a></p>
+<p><a class="button secondary-link" href="/properties/{{ property.id }}/ledger">View rent ledger</a></p>
+<h2>Approved terms and prior values</h2>
+<p>Each term applies only during its effective dates. “Demo seed” identifies pre-reviewed setup data. Proposed and rejected facts appear in lease review.</p>
+{% if not facts %}<p class="notice">No lease terms approved yet. Review the uploaded source and use the extraction handoff before creating rent obligations.</p>{% endif %}
+{% for fact in facts %}
+{% set label, value = fact.fact_type|fact_label(fact.value_json) %}
+<article class="term">
+  <div class="term-heading"><h3>{{ label }} <span class="value">{{ value }}</span></h3><span class="badge">Approved · {{ fact.reviewer }}</span></div>
+  <p class="muted">Effective {{ fact.effective_from }}{% if fact.effective_to %} through {{ fact.effective_to }}{% else %} onward{% endif %} · {{ fact.filename }}</p>
+  {% for evidence in fact.evidence %}<p class="muted">Page {{ evidence.page }} · {{ evidence.section }}</p><blockquote>{{ evidence.quote }}</blockquote>{% endfor %}
+  {% if fact.uncertainty %}<p class="notice">Reviewed uncertainty: {{ fact.uncertainty }}</p>{% endif %}
+</article>
+{% endfor %}
+{% if not facts|selectattr('fact_type', 'equalto', 'grace_period')|list %}<p class="notice">Grace period not specified. No grace period or late fee has been inferred.</p>{% endif %}
+<h2>Source documents</h2>
+{% for document in documents %}
+<details><summary>{{ document.filename }} · {{ document.document_type|capitalize }} · {{ document.document_date }}</summary><pre>{{ document.text_content }}</pre></details>
+{% if document.original_filename %}<p><a href="/properties/{{ property.id }}/documents/{{ document.id }}/original">Download original: {{ document.original_filename }}</a> · {{ document.page_count }} page(s)</p>{% endif %}
+{% endfor %}
+<h2>Review history</h2>
+<ul class="history">{% for decision in decisions %}{% set label, value = decision.fact_type|fact_label(decision.value_json) %}<li><strong>{{ label }} · {{ value }}</strong><br>{{ decision.reviewer_label }} · {{ decision.decision }} · <time>{{ decision.created_at }}</time><br>{{ decision.notes }}</li>{% endfor %}</ul>
+{% endblock %}

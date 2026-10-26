@@ -1,6 +1,6 @@
 # Property Operations Workflow — Product Brief
 
-**Status:** Draft for discussion  
+**Status:** Interview prototype implemented; observed results and limitations are recorded in `EVALUATION.md`.
 **Purpose:** Define the product problem and the interview prototype before implementation.
 
 ## Summary
@@ -60,7 +60,9 @@ The product may include a narrow, deterministic daily check that surfaces upcomi
 ### In scope
 
 - A small set of fictional commercial properties and lease records.
+- Add fictional properties through a PDF/TXT lease-upload interface; retain original documents and review extracted terms before approval. Add later lease/amendment documents to an existing property without overwriting history.
 - Expected rent amount, due date, payment period, and source/provenance fields.
+- Separate read-only property rent ledgers showing saved charges, approved payment receipts, rent months, due/received dates, source references, and chronological running balances; unapproved credits remain separate.
 - Lease-document intake for sample files and AI-proposed term extraction with source evidence and human review. For this prototype, the user invokes the reusable skill in ChatGPT and transfers its structured output into the app; the app does not make a model API call.
 - Import of a synthetic transaction CSV.
 - Candidate transaction-to-rent matching, including clear, partial, late, duplicate, and ambiguous cases.
@@ -149,7 +151,7 @@ Do not present these expected benefits as measured results unless they are actua
 7. Run a later period or import a follow-up transaction to demonstrate persistent memory and exception resolution.
 8. Explain the reusable skill, what is stored, the safety boundary, and one limitation—including that model invocation is a manual handoff in this prototype.
 
-## Assumptions and open questions
+## Assumptions and resolved prototype choices
 
 - The initial user is a family member managing a small commercial portfolio, not a third-party property manager.
 - The prototype uses fictional data and a transaction-file simulation.
@@ -157,13 +159,13 @@ Do not present these expected benefits as measured results unless they are actua
 - Product and technical choices will be made in reviewable slices. This brief describes the intended outcome, not a mandated implementation stack.
 - Before any real family use, the team must choose hosting, authentication, data storage, backups, document access, and recovery practices suitable for sensitive records.
 
-Questions to resolve during planning or prototype work:
+Choices resolved during planning and implementation:
 
-- What is the simplest plausible lease packet to use for the successful demo, and what amendment should create the edge case?
-- What transaction fields and matching rules make the simulated bank feed believable without copying real statements?
-- Which decisions should require explicit human approval in the interface?
-- What is the best lightweight store for demonstrating persistence and an inspectable memory model?
-- What project setup and GitHub workflow best support the take-home and the user's learning goals?
+- Three fictional base leases, Orchard's rent amendment, and a later Beacon option-confirmation source support the demo.
+- Synthetic CSV fields are transaction identifier, account label, posted date, description, and amount. Deterministic full-payment rules make suggestions; partial and ambiguous cases require manual allocation.
+- Lease facts, payment allocations, and option exercise events require explicit human review. Reports and attention checks calculate views without changing approval state.
+- A local SQLite database preserves sources, effective terms, allocations, and inspectable decision/exception history.
+- A virtual environment, pinned direct dependencies, documented local commands, isolated rehearsal data, and automated checks support the take-home. Repository publication and a hosted GitHub workflow have not been performed.
 
 ## Competitive context
 
@@ -171,9 +173,8 @@ Commercial property-management and lease-administration products already offer m
 
 ## Decisions still intentionally open
 
-- Product name and branding.
-- UI framework, backend, database, model provider, and hosting provider.
-- Whether stage one is local-only or uses a hosted development database.
+- Final product name and branding; “Property Operations” is the prototype's working title.
+- Any future model API/provider integration or hosted deployment. This iteration uses local FastAPI, server-rendered HTML, and SQLite; its only runtime AI step is the manual ChatGPT lease handoff.
 - Any future integration with Google Drive, email, or a bank sandbox.
 - Whether the prototype later expands to periodic sales reports, property notes, or document storage beyond the demo packet.
 

@@ -1,6 +1,6 @@
 # Property Operations Workflow — Implementation Plan
 
-**Status:** Ready to build after product clarification, October 25, 2026  
+**Status:** All six build slices completed, October 25, 2026. Fresh setup and 118 automated checks passed; walkthrough, observed results, and manual-verification limits are documented.
 **Inputs:** [Product brief](PRODUCT_BRIEF.md), [technical design](TECHNICAL_DESIGN.md)  
 **Time target:** The exercise is expected to take about 3–4 hours, with a six-hour maximum. Target roughly three focused hours for implementation and focused verification, then reserve 30–60 minutes for the user's manual review, demo rehearsal, and small refinements. Track planning, implementation, and review time honestly; do not assume preparation is excluded from the exercise total unless the instructions explicitly say so. Do not stretch work merely to fill the target.
 
@@ -92,7 +92,7 @@ Create the extraction skill during the build using the skill-creator workflow. D
 
 Preserve the existing October transactions, especially Juniper's unattributed $4,200 credit. Add a separately identified later $4,200 Juniper payment so a reviewer can resolve the remaining balance while leaving the unattributed credit open. Use an October date after the initial review date and a later explicit review date for the follow-up demonstration.
 
-Add a clearly fictional supporting document and reviewed event history for an exercised final extension with no options remaining; keep Beacon's existing unexercised option intact. This can be a fourth small property. Unknown future extension rent must remain unknown unless a fictional signed term supplies it. Add focused import fixtures for invalid rows, duplicate identifiers, and an ambiguous full-payment candidate. Keep them small and label each expected outcome.
+The implemented extension example uses Beacon before and after a reviewed exercise, retaining the original unexercised base-lease source and adding a later fictional confirmation. A staging action creates pending date/option proposals; the user approves them and the exercise event separately. This demonstrates both an open notice window and exhausted options without adding a fourth property. Unknown future extension rent remains unknown. Focused import fixtures cover invalid rows, duplicate identifiers, and an ambiguous full-payment candidate.
 
 ## 7. Verification and demo acceptance
 
@@ -112,4 +112,4 @@ The demo follows the user's actual workflow: start the local app; show seeded te
 
 Deliver working source, the reusable extraction skill and schema, fictional fixtures, automated checks, and concise setup/demo instructions. `EVALUATION.md` records what was actually tested, observed pass/fail outcomes, live extraction observations, actual build time, and any unfinished items. Do not present planned tests as passed or synthetic examples as measured business benefits.
 
-Expected limitations: manual ChatGPT handoff, one lease per property, base rent only, posted dates standing in for receipt dates, no retroactive amendment reconciliation, no overpayment/reversal accounting, and no production controls. No implementation has been performed as part of this planning document.
+Expected limitations: manual ChatGPT handoff, one lease per property, base rent only, posted dates standing in for receipt dates, no retroactive amendment reconciliation, no overpayment/reversal accounting, and no production controls. See `EVALUATION.md` for actual implementation progress, measured build time, and observed checks.

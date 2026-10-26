@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}{% if property %}Add lease document{% else %}Add property{% endif %} · Property Operations{% endblock %}
+{% block content %}
+<a href="{% if property %}/properties/{{ property.id }}{% else %}/{% endif %}">← {% if property %}{{ property.name }}{% else %}All properties{% endif %}</a>
+<p class="eyebrow">Lease intake</p><h1>{% if property %}Add a lease document.{% else %}Start a property with its lease.{% endif %}</h1>
+<p class="intro">Upload the source, review its text, then establish terms through the extraction and approval workflow.</p>
+{% if error %}<div class="notice error" role="alert">{{ error }} No new property or document was saved. Your form values are retained; please reselect the file after correcting the error.</div>{% endif %}
+<form method="post" enctype="multipart/form-data" class="panel">
+{% if not property %}
+<label for="name">Property name</label><input type="text" id="name" name="name" maxlength="160" value="{{ values.name or '' }}" required placeholder="Harbor Court">
+<label for="tenant_name">Tenant name</label><input type="text" id="tenant_name" name="tenant_name" maxlength="160" value="{{ values.tenant_name or '' }}" required placeholder="Cove Studio LLC">
+<label for="account_label">Fictional account label (optional)</label><input type="text" id="account_label" name="account_label" maxlength="160" value="{{ values.account_label or '' }}" placeholder="Harbor Court operating"><p class="muted">Used to associate CSV transactions with this property. Leave blank to use the property name followed by “operating.” Use this exact label in your synthetic transaction CSV.</p>
+{% else %}<label for="document_type">Document type</label><select name="document_type" id="document_type"><option value="lease" {% if values.document_type != 'amendment' %}selected{% endif %}>Lease</option><option value="amendment" {% if values.document_type == 'amendment' %}selected{% endif %}>Amendment</option></select>{% endif %}
+<label for="document_date">Source document date</label><input type="date" id="document_date" name="document_date" value="{{ values.document_date or '' }}" required><p class="muted">The date on the document, not an assumed rent effective date. Extracted effective dates are reviewed separately.</p>
+<label for="lease_file">{% if property %}Lease or amendment file{% else %}Base lease file{% endif %}</label><input type="file" id="lease_file" name="lease_file" accept=".pdf,.txt,application/pdf,text/plain" required>
+<p>PDF with selectable text on every page, or UTF-8 TXT · Up to 10 MB, 100 pages, and 500,000 text characters. Scans, image-only/blank PDF pages, encrypted PDFs, and DOCX are not supported.</p>
+<p class="muted">For TXT, existing sequential <code>--- Page 1 ---</code> markers are preserved. Text without markers is treated as one source page. Unnumbered pages use the citation section <code>Page text</code>.</p>
+<div class="notice">Fictional documents only. The original file and extracted text stay in the local database. Uploading creates no approved terms or rent obligations and makes no model call.</div>
+<button type="submit">{% if property %}Upload document and review{% else %}Create property and review lease{% endif %}</button>
+</form>
+{% endblock %}

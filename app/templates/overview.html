@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block content %}
+<p class="eyebrow">Portfolio overview</p>
+<h1>A clear view of your properties.</h1>
+<p class="intro">Start with the lease terms and the evidence behind them.</p>
+<div class="notice"><strong>Payment review ready.</strong> Review lease terms, then <a href="/reconciliation">create obligations, import transactions, and approve payments</a>. <a href="/report">Prepare the monthly brief and unsent reminders</a>.</div>
+<h2>Needs Attention <span class="count">{{ attention['items']|length }}</span></h2>
+<p>Review date {{ as_of }} · Calculated when opened. <a href="/attention?as_of={{ as_of }}">Review dates, evidence, and extension decisions</a>.</p>
+{% if error %}<p class="notice error">{{ error }}</p>{% endif %}
+{% for item in attention['items'][:5] %}<p><strong>{{ item.property_name }} · {{ item.title }}</strong><br>{{ item.detail }}</p>{% else %}<p>No attention items from the approved records for this date.</p>{% endfor %}
+{% if attention['items']|length > 5 %}<p><a href="/attention?as_of={{ as_of }}">View all {{ attention['items']|length }} attention items</a></p>{% endif %}
+<h2>Properties <span class="count">{{ properties|length }}</span></h2>
+<p><a class="button" href="/properties/new">Add property from a lease</a></p>
+<div class="cards">
+{% for property in properties %}
+  <article class="card">
+    <p class="eyebrow">Commercial property</p>
+    <h3><a href="/properties/{{ property.id }}">{{ property.name }}</a></h3>
+    <p>{{ property.tenant_name }}</p>
+    <dl><dt>Account</dt><dd>{{ property.account_label }}</dd><dt>Source documents</dt><dd>{{ property.document_count }}</dd></dl>
+    <a class="button" href="/properties/{{ property.id }}">View lease records <span aria-hidden="true">→</span></a>
+    <p><a href="/properties/{{ property.id }}/ledger?as_of={{ as_of }}">View rent ledger</a></p>
+  </article>
+{% else %}
+  <p>No demo properties yet. <a href="/properties/new">Upload a lease to add your first property</a>, or stop the app and run <code>python -m app.db init</code> to load the fictional examples.</p>
+{% endfor %}
+</div>
+{% endblock %}
