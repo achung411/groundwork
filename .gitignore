@@ -18,6 +18,9 @@
 # Locally installed helper tools
 .tools/
 
+# Personal interview-supporting material (kept outside the shared repository)
+/PROJECT_PROCESS_FLOW.svg
+
 # Python runtime and generated data
 .venv/
 __pycache__/

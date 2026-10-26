@@ -81,3 +81,25 @@ def test_empty_startup_does_not_seed(tmp_path, monkeypatch):
     monkeypatch.setenv("PROPERTY_DB_PATH", str(tmp_path / "empty.sqlite3"))
     with TestClient(app) as client:
         assert "No demo properties yet" in client.get("/").text
+
+
+def test_clear_requires_confirmation_empties_all_records_and_stays_empty(database):
+    command = [sys.executable, "-m", "app.db", "clear"]
+    denied = subprocess.run(command, cwd=ROOT, capture_output=True, text=True)
+    assert denied.returncode != 0
+    with connect() as connection:
+        assert connection.execute("SELECT count(*) FROM properties").fetchone()[0] == 3
+    cleared = subprocess.run(command + ["--confirm"], cwd=ROOT, capture_output=True, text=True)
+    assert cleared.returncode == 0, cleared.stderr
+    for _ in range(2):
+        with TestClient(app) as client:
+            assert "No demo properties yet" in client.get("/").text
+            assert client.get("/properties/new").status_code == 200
+            assert client.get("/reconciliation?period=2026-10").status_code == 200
+    with connect() as connection:
+        tables = [row[0] for row in connection.execute("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'")]
+        assert tables
+        assert all(connection.execute('SELECT count(*) FROM "' + table + '"').fetchone()[0] == 0 for table in tables)
+        assert not connection.execute("PRAGMA foreign_key_check").fetchall()
+    assert (ROOT / "sample-data/leases/beacon-industrial-lease.txt").is_file()
+    assert (ROOT / "sample-data/transactions-2026-10.csv").is_file()

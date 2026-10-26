@@ -1,6 +1,7 @@
 """SQLite foundation and explicit fictional-data setup.
 
-Run `python -m app.db init` once; use `reset --confirm` to erase demo work.
+Start the app for an empty database. `init` explicitly loads fictional samples.
+Use `clear --confirm` to empty records, or `reset --confirm` to reload samples.
 Ordinary application startup creates missing tables but never reseeds records.
 """
 
@@ -206,26 +207,27 @@ def initialize(path=None):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("command", choices=["init", "reset"])
+    parser.add_argument("command", choices=["init", "reset", "clear"])
     parser.add_argument("--confirm", action="store_true", help="Confirm deletion of demo records")
     args = parser.parse_args()
     target = database_path()
-    if args.command == "reset":
+    if args.command in ("reset", "clear"):
         if not args.confirm:
-            parser.error("reset deletes local demo records; repeat with --confirm. Stop the app first.")
+            parser.error(args.command + " deletes local records; repeat with --confirm. Stop the app first.")
         # Reset our tables transactionally instead of unlinking a potentially open database.
         initialize(target)
         with connect(target) as connection:
             for table in ("lease_option_events", "exception_events", "exceptions", "payment_allocations", "match_proposals", "transactions", "imports", "rent_obligations", "extraction_submissions", "review_decisions", "fact_evidence", "lease_facts", "document_uploads", "lease_documents", "property_account_labels", "properties"):
                 connection.execute("DELETE FROM " + table)
-            from app.seed import seed
-            seed(connection)
+            if args.command == "reset":
+                from app.seed import seed
+                seed(connection)
     else:
         initialize(target)
         with connect(target) as connection:
             from app.seed import seed
             seed(connection)
-    print("Demo database ready: " + str(target))
+    print(("Empty database ready: " if args.command == "clear" else "Demo database ready: ") + str(target))
 
 
 if __name__ == "__main__":

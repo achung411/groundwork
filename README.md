@@ -1,6 +1,6 @@
 # Property Operations
 
-A local interview prototype for reviewing fictional commercial lease terms, reconciling rent transactions, and preparing follow-up with evidence and human approval.
+A local prototype for reviewing fictional commercial lease terms, reconciling rent transactions, and preparing follow-up with evidence and human approval.
 
 Python/FastAPI serves HTML pages; SQLite preserves sources, effective terms, review decisions, payment allocations, and exception history. Lease extraction runs manually in a separate ChatGPT session. Matching, arithmetic, date checks, reports, and reminders use deterministic code. No model API credentials are needed.
 
@@ -12,13 +12,14 @@ Tested with Python 3.9.6 on macOS. From the repository folder:
 python3 -m venv .venv
 source .venv/bin/activate
 python -m pip install -r requirements-dev.txt
-python -m app.db init
 python -m uvicorn app.main:app --host 127.0.0.1 --port 8000
 ```
 
+The app starts with an empty database. To explicitly preload fictional examples instead, run `python -m app.db init` before starting the server. Sample documents and CSVs remain in `sample-data/` for manual upload.
+
 Open [the local app](http://127.0.0.1:8000). Ctrl+C stops the server. In later sessions, activate `.venv` and run the Uvicorn command. `requirements.txt` contains runtime dependencies; `requirements-dev.txt` includes test tools.
 
-A fresh database contains three fictional properties, four source documents, and seven explicitly labeled pre-reviewed base terms. Orchard's rent amendment starts unapproved. Page visits never create obligations or record payments.
+Explicitly loading the samples adds three fictional properties, four source documents, and seven explicitly labeled pre-reviewed base terms. Orchard's rent amendment starts unapproved. Page visits never create obligations or record payments.
 
 ## Add a property from a lease
 
@@ -30,7 +31,7 @@ PDF/TXT intake allows up to 10 MB, 100 pages, and 500,000 extracted characters. 
 
 ## Demonstrate the workflow
 
-Follow [DEMO_WALKTHROUGH.md](DEMO_WALKTHROUGH.md) for an isolated rehearsal, the interview sequence, expected balances, and edge cases.
+Follow [DEMO_WALKTHROUGH.md](DEMO_WALKTHROUGH.md) for an isolated walkthrough, expected balances, and edge cases.
 
 1. **Lease review:** copy the complete extraction prompt into ChatGPT. Paste just its JSON object into the app; review citations, effective dates, and uncertainty before approving. The reusable [skill](skills/lease-extraction/SKILL.md), [response contract](skills/lease-extraction/contract.md), and [JSON Schema](skills/lease-extraction/schema.json) are included. The copyable prompt works without installing the repository skill into ChatGPT.
 2. **Reconciliation:** select October 2026 and an explicit review date, create obligations from approved terms, and import the [fictional CSV](sample-data/transactions-2026-10.csv). Full-payment proposals require approval. Partial payments and ambiguous credits require an explicit target and evidence note.
@@ -43,7 +44,13 @@ Read [sample-data/README.md](sample-data/README.md) for fixture purposes. Use on
 
 The ignored runtime database is `data/property-operations.sqlite3`. Startup creates missing tables without seeding or replacing records. `python -m app.db init` seeds only an empty property table. `PROPERTY_DB_PATH` selects a separate database for tests or rehearsal; the walkthrough shows how to preserve your working demo.
 
-To deliberately discard the selected database's demo records, stop its server, confirm the intended `PROPERTY_DB_PATH`, then run:
+To deliberately empty the selected database without reloading samples, stop its server, confirm the intended `PROPERTY_DB_PATH`, then run:
+
+```sh
+python -m app.db clear --confirm
+```
+
+To discard current records and reload the fictional sample properties and lease facts instead:
 
 ```sh
 python -m app.db reset --confirm
