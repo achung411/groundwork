@@ -1,4 +1,4 @@
-# Property Operations
+# Groundwork
 
 A local prototype for reviewing fictional commercial lease terms, reconciling rent transactions, and preparing follow-up with evidence and human approval.
 

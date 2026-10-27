@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}{% if property %}Add lease document{% else %}Add property{% endif %} · Property Operations{% endblock %}
+{% block title %}{% if property %}Add lease document{% else %}Add property{% endif %} · Groundwork{% endblock %}
 {% block content %}
 <a href="{% if property %}/properties/{{ property.id }}{% else %}/{% endif %}">← {% if property %}{{ property.name }}{% else %}All properties{% endif %}</a>
 <p class="eyebrow">Lease intake</p><h1>{% if property %}Add a lease document.{% else %}Start a property with its lease.{% endif %}</h1>

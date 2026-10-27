@@ -71,7 +71,7 @@ The page counts describe these PDF exports, not the original lease's pagination 
 
 ### Demo use
 
-After demonstrating historical activity, new transaction imports, payment approval, reports, and ledgers, follow **8. Add Best Burger and demonstrate documentation gaps** in `DEMO_WALKTHROUGH.md`. Upload the base lease as a new property, then attach the rent addendum to that same property. Extract and review each source separately. These files demonstrate retaining source evidence, recognizing supported facts, and holding incomplete or unsupported terms for review.
+After demonstrating historical activity, new transaction imports, payment approval, reports, and ledgers, follow **5. Finish with Best Burger: documentation gaps** in `DEMO_WALKTHROUGH.md`. Upload the base lease as a new property, then attach the rent addendum to that same property. Extract and review each source separately. These files demonstrate retaining source evidence, recognizing supported facts, and holding incomplete or unsupported terms for review.
 
 ### Expected gaps and limits
 

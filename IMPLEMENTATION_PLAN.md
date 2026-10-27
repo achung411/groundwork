@@ -1,4 +1,4 @@
-# Property Operations Workflow — Implementation Plan
+# Groundwork Workflow — Implementation Plan
 
 **Status:** All six build slices completed, October 25, 2026. Fresh setup and 118 automated checks passed; walkthrough, observed results, and manual-verification limits are documented.
 **Inputs:** [Product brief](PRODUCT_BRIEF.md), [technical design](TECHNICAL_DESIGN.md)  

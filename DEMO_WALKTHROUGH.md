@@ -1,10 +1,12 @@
 # Demo walkthrough
 
-This guide targets an 8–10 minute demonstration, plus time for the live ChatGPT handoff. All records and transactions are fictional. The exercise demonstrates a small owner-managed workflow, not measured operational impact or production readiness.
+Show an existing portfolio in progress, add a straightforward new property, process October transactions, show the updated results, and finish with a realistic PDF packet containing unresolved lease details. All records are fictional. This demonstrates a reviewed workflow, not measured business impact or production readiness. Rehearse the live ChatGPT handoffs separately; their response time is variable.
 
-## Prepare an isolated demo
+## Prepare before the audience arrives
 
-Keep the current app/database on port 8000. In a **new terminal**, from the repository folder, start a separate database on port 8001:
+### Use an isolated, persistent demo database
+
+Keep the working app/database on port 8000. In a new terminal, from the repository folder:
 
 ```sh
 source .venv/bin/activate
@@ -13,149 +15,165 @@ python -m app.db init
 python -m uvicorn app.main:app --host 127.0.0.1 --port 8001
 ```
 
-Open [the isolated app](http://127.0.0.1:8001). Keep that terminal open; its database selection persists for later commands in that terminal. Each new filename starts a fresh demonstration without resetting your main records. To demonstrate persistence, stop with Ctrl+C and repeat only the Uvicorn command in the same terminal. If port 8001 is occupied, stop the earlier rehearsal server or choose another loopback port consistently.
+Open [the isolated app](http://127.0.0.1:8001). Keep that terminal open: its database selection persists for later commands. The unique filename creates a fresh demonstration without resetting the working records. To resume the prepared state, stop with Ctrl+C and repeat only the Uvicorn command in that same terminal. Do not rerun the timestamped export when resuming; that selects a different database. If port 8001 is occupied, stop the earlier demo server or choose another loopback port consistently.
 
-Before the demo, run `python -m pytest -q` and `python -m pip check` in the activated environment. Have a separate ChatGPT session ready and locate the CSV files in `sample-data/` for the browser's file picker. The generated copyable prompt contains the skill instructions, response contract, and source text; it does not require a model key or a skill installation in ChatGPT.
+Run `python -m pytest -q` and `python -m pip check` before presenting. Have a separate ChatGPT session ready and locate the files in `sample-data/` for normal browser uploads. The copyable extraction prompt includes the skill, contract, and selected source text; no model API key or skill installation is required.
 
-## Optional: prepare historical activity before the live demonstration
+### Prepare the three existing properties and their history
 
-To start with multiple transactions already visible, use `sample-data/transactions-history.csv` before importing any October scenario. It contains eight August/September credits totaling $30,900, with IDs distinct from the other sample files. Follow the [historical preload instructions](sample-data/README.md#historical-preload-august-and-september-2026) in this isolated database. Orchard's amendment must be reviewed before creating the historical $5,050 obligations; complete that review in preparation if you take this path. For the final live intake/extraction example afterward, use the Best Burger PDF packet in step 8 rather than repeating the already-approved Orchard amendment. Harbor Court remains available as a simpler optional intake example.
+The explicit `init` command loads Orchard Row Retail, Beacon Industrial, and Juniper Market with base terms. **Reserve Harbor Court and Best Burger for live creation.** Do not upload them during preparation. Do not import the October transaction files yet or stage Beacon's optional extension examples for the main demo.
 
-Import the history once (eight added), create the August and September obligations, and review/approve supported payments separately. Keep Juniper's two unidentified credits unallocated unless additional fictional evidence is verified. After the documented supported approvals, Orchard and Beacon have zero historical balance; Juniper has $8,400 outstanding with two unallocated $4,200 credits. Restarting the same database preserves this prepared state. A read-only September 30 ledger view can introduce the existing history before importing October's new activity.
+1. Open Orchard → **Extract and review lease terms**, select `orchard-row-amendment.txt`, and use the ChatGPT handoff. Review and approve $5,050 monthly rent effective July 1, 2025, including evidence, execution uncertainty, and replacement acknowledgment. The earlier $4,800 term remains in history. Complete this before creating historical obligations; the amendment is preparation, not a live demo step.
+2. Open **Reconciliation**, rent month `2026-08`, review date `2026-09-30`. Import `transactions-history.csv` once. Expect **8 added, 0 skipped** across August and September. Only August's four rows appear in the August view; September's four appear when that month is selected. The configured default property phrases match these descriptions.
+3. For both `2026-08` and `2026-09`, explicitly create each of the three properties' rent obligations. Each month totals **$15,450**. Run matching separately for each month and approve the supported Orchard $5,050 and Beacon $3,200 proposals.
+4. For each month, manually allocate the named Mosaic Foods $3,000 partial payment to Juniper's corresponding month, with evidence and confirmation. Leave the two unidentified `ACH CREDIT 84XX-1102` credits of $4,200 each unallocated. Their property phrases identify Juniper, but their amounts do not verify payer identity.
+5. Verify the prepared state below. Leave all October obligations uncreated so they can be introduced live. Use the same database when presenting.
 
-The numbered walkthrough below assumes no historical preload and performs Orchard's amendment approval live. If history is preloaded, skip its already-completed amendment approval and distinguish October's monthly totals from all-period ledger balances: paying October does not settle earlier Juniper arrears.
+Importing historical transactions alone does not create obligations, approve payments, or establish paid ledgers. See the [historical preload instructions](sample-data/README.md#historical-preload-august-and-september-2026) for fixture details.
 
-## 1. Explain the problem and approval boundary
+| Prepared state through September 30 | Rent charged | Approved payments | Rent balance owed |
+|---|---:|---:|---:|
+| Orchard Row Retail | $10,100 | $10,100 | $0 |
+| Beacon Industrial | $6,400 | $6,400 | $0 |
+| Juniper Market | $14,400 | $6,000 | $8,400 |
+| **Portfolio** | **$30,900** | **$22,500** | **$8,400** |
 
-Show the three fictional properties. Suggested explanation:
+There should be eight imported historical transactions, six monthly obligations, six approved payment allocations, and two unallocated $4,200 credits. Harbor Court and Best Burger should be absent. No October transactions or obligations should exist. Historical arrears are intentional and remain separate from October's monthly totals.
 
-> A small owner-managed commercial portfolio currently checks separate bank portals against paper records and leases. This prototype brings the evidence and review decisions into one local workspace. It proposes interpretations and matches, but approved terms and payments change only after a person reviews them.
+## 1. Tour the portfolio in progress
 
-Open Orchard's records. Its pre-reviewed base lease says $4,800. The later amendment is present as source material, not an approved change.
+Start on **Overview** with review date September 30: [prepared portfolio](http://127.0.0.1:8001/?as_of=2026-09-30).
 
-## 2. Extract and approve the amendment live
+Suggested introduction:
 
-Open Orchard → **Extract and review lease terms**. Select `orchard-row-amendment.txt`, expand **Copy the extraction prompt for ChatGPT**, and copy it into the separate ChatGPT session. Request the extraction.
+> This is a portfolio already in use. We can see what rent has been recorded, what remains outstanding, and what evidence still needs review. A person approves changes to lease terms and recorded payments.
 
-Copy only the returned JSON object, excluding code fences or commentary, into **Lease extraction JSON**. Validate and stage it. Check:
+Keep the tour focused:
 
-- Monthly base rent is $5,050 from July 1, 2025, supported by page 1, section 2.
-- The proposal is pending; importing did not change approved rent.
-- Execution status is not established by the sample source. Review that uncertainty explicitly rather than treating the file as proof of a real executed agreement.
+- **Overview / Needs Attention:** show the three existing properties and outstanding rent based on approved records. For this state, focus on rent attention rather than optional lease-extension examples.
+- **Property records:** briefly show an approved term, its source quotation, and prior values/history where relevant. No amendment processing is needed live.
+- **Property ledger:** open Juniper's **View rent ledger**, through `2026-09-30`. Show chronological charges, partial receipts, the $8,400 running balance owed, and the two unallocated credits outside that balance. Orchard or Beacon provides a paid comparison.
+- **Reconciliation:** select `2026-09`, review date `2026-09-30`. Show the month's transactions, approved allocations, and unresolved credit. September alone has $15,450 expected, $11,250 approved, and $4,200 remaining.
+- **Report:** show the monthly brief and an unsent reminder acknowledging pending credits. It is a review aid; the app sends nothing.
 
-Add a note explaining use of the presented amendment in this fictional demo. Acknowledge the evidence and replacement, then approve. Show the original $4,800 value through June 30, 2025 and $5,050 from July 1, with both sources and the decision retained.
+Keep the distinction explicit: the monthly report covers September, while each property ledger accumulates all saved activity through its selected date. Current approval decisions are evaluated against due/posted dates; moving the date backward is not a reconstruction of past reviewer knowledge.
 
-If ChatGPT returns a malformed shape or a mismatched quote, correct the selected JSON and resubmit. Pending facts can be rejected and replaced with corrected proposals. Do not claim quote matching proves semantic or legal correctness. There is no saved model response required for this walkthrough; the automated tests use hand-authored expected proposals and do not evaluate live model quality.
+## 2. Create Harbor Court live
 
-## 3. Create rent and import October activity
+Harbor Court is the uncomplicated intake example: one short lease, fixed rent, stated dates, no amendments, and no extension options.
 
-Open **Reconciliation**. Choose rent month `2026-10`, review date `2026-10-25`, and **Open review**. Create each property's obligation after inspecting its preview.
+1. On **Overview**, choose **Add property from a lease**.
+2. Enter property `Harbor Court`, tenant `Cove Studio LLC`, description matching phrase `Harbor Court operating` (or leave it blank for that default), and source document date `2025-12-15`.
+3. Upload `sample-data/leases/harbor-court-lease.txt`. Show that the property and source are saved before any terms are approved.
+4. Open **Copy the extraction prompt for ChatGPT**, copy the complete prompt into the separate session, and ask it to extract the proposed facts. Paste only the JSON object into **Lease extraction JSON** and validate/stage it.
+5. Verify the source, effective dates, and citations before approving supported terms:
 
-| Property | Expected rent | Due | Approved grace |
+| Term | Expected source-supported value |
+|---|---|
+| Monthly base rent | $2,100 from January 1, 2026 |
+| Rent due day | First day of each month |
+| Lease commencement | January 1, 2026 |
+| Lease expiration | December 31, 2030 |
+| Grace period / extension option | Unspecified; do not invent values |
+
+The unnumbered TXT is page 1 with citation section `Page text`. The JSON filename must match the app's displayed property-prefixed reference, not just the original filename. Correct malformed JSON or mismatched citations against the source before resubmission; quote matching establishes text location, not semantic correctness.
+
+Return to the property records to show the approved terms. Harbor Court is now the fourth property. No earlier-month Harbor Court obligations or payments are created automatically; its ledger covers only obligations and payments actually saved in the app.
+
+## 3. Create October rent and process new transactions
+
+Open **Reconciliation**, rent month `2026-10`, review date `2026-10-25`, and choose **Open review**. Use this explicit date throughout the October steps.
+
+Inspect each preview and create October obligations for **all four properties**:
+
+| Property | October rent | Due | Approved grace |
 |---|---:|---|---|
 | Orchard Row Retail | $5,050 | October 1 | Not specified |
 | Beacon Industrial | $3,200 | October 5 | Five calendar days after due date |
 | Juniper Market | $7,200 | October 1 | Not specified |
-| **Total** | **$15,450** | | |
+| Harbor Court | $2,100 | October 1 | Not specified |
+| **Total** | **$17,550** | | |
 
-Inspect an obligation's retained evidence/assumptions. The record keeps its values even after a later term changes. Missing approved lease boundaries are disclosed rather than silently filled in.
+Explain the order:
 
-Use the file picker to import `transactions-2026-10.csv`. Expect four new transactions. Reimport it and expect zero added, four skipped. Importing the CSV has not recorded any rent payments.
+> Importing transactions does not require rent obligations. We create them first here so the expected charges are visible before we compare receipts. Obligations must exist before matching or payment allocation.
 
-The four credits total $15,450, exactly equal to expected rent. That total does **not** establish that all rent is paid: one credit is unidentified.
+Upload `sample-data/transactions-2026-10.csv`. Expect **4 added, 0 skipped**. The existing eight historical transactions remain saved. Only October rows are shown in this monthly view.
 
-## 4. Approve supported matches and a partial payment
+Descriptions identify Orchard, Beacon, and Juniper through configured phrases; no `account_label` CSV column is required. The file contains no Harbor Court payment. **Harbor Court's $2,100 will remain outstanding**, which is expected. Importing any of these credits records no rent payment by itself.
 
-Click **Run matching for 2026-10**. Expect two pending full-payment proposals: Orchard $5,050 and Beacon $3,200. Neither changes the recorded balance until approved.
+Click **Run matching for 2026-10**. Expect two pending full-payment proposals: Orchard $5,050 and Beacon $3,200. Review their source evidence and approve them. Beacon's October 18 payment is after its approved grace period; retain the timing annotation without calculating a fee.
 
-Review and approve Orchard and Beacon. Beacon's October 18 posted date is after its approved grace period. Its due/grace timing annotation stays in history after the balance is paid. No fee is calculated. Posted date is only this demo's proxy for receipt date.
+Under **Manual allocation**, expand `SYN-2026-10-003`, select **Juniper's October obligation**, explain the named Mosaic Foods $3,000 partial payment, acknowledge, and approve. Explicitly choose October: Juniper also has historical obligations available, and this demo is not allocating the deposit to arrears.
 
-Under **Manual allocation**, expand `SYN-2026-10-003`, Juniper's named $3,000 partial payment. Explicitly select October rent, explain the supporting memo, acknowledge, and approve. The entire deposit goes to that one obligation.
+Leave `SYN-2026-10-004`, the unidentified $4,200 credit, unallocated. It matches a property's phrase but still needs payer/payment verification. Do not combine it with the partial payment merely because their amounts total rent.
 
-Leave `SYN-2026-10-004`, the unidentified $4,200 credit, unallocated. Matching the remaining balance is insufficient evidence to combine it with the partial payment.
+| October checkpoint | Approved payments | Remaining October rent |
+|---|---:|---:|
+| Four obligations and CSV imported | $0 | $17,550 |
+| Orchard and Beacon approved | $8,250 | $9,300 |
+| Juniper partial approved | **$11,250** | **$6,300** |
 
-| Checkpoint | Approved payments | Remaining rent | Important unresolved evidence |
-|---|---:|---:|---|
-| Obligations and CSV imported | $0 | $15,450 | All four credits await review |
-| Orchard and Beacon approved | $8,250 | $7,200 | Juniper credits remain unallocated |
-| Juniper partial approved | $11,250 | $4,200 | Unidentified $4,200 credit remains open |
+## 4. Show how the portfolio changed
 
-## 5. Produce the actionable artifact
+Return to the October **monthly brief** and one or two **property ledgers** through `2026-10-25`.
 
-Follow **Open monthly brief and unsent reminders for this review**. Point out approved amounts, exact source passages, unallocated credits, assumptions, uncertainty, exceptions, and recommended next steps.
+- October report: **$17,550 expected, $11,250 approved, $6,300 remaining**. The remaining amount is $4,200 Juniper plus $2,100 Harbor Court. The new unidentified $4,200 credit remains separate.
+- Juniper ledger: August and September arrears remain $8,400; October adds $4,200 outstanding. Its running rent balance is **$12,600**, with three unallocated $4,200 credits shown separately.
+- Harbor Court ledger: one $2,100 October charge and no payment; earlier months are not inferred from the lease's start date.
+- Orchard and Beacon: supported October payments leave their running rent balances at zero.
 
-Inspect Juniper's unsent reminder: it reports the reviewed balance and acknowledges credits still awaiting review rather than concluding that payment has not arrived. Copy it for review/editing outside the app. Nothing is sent.
+Across all saved obligations through October 25, the four property ledgers total **$48,450 charged, $33,750 approved, $14,700 owed**. This all-period balance includes historical arrears, so it differs from October's $6,300 remaining.
 
-Use **Download brief as Markdown** to retain this partial reconciliation as a standalone artifact.
+Show an updated unsent reminder or download the Markdown brief if useful. The key checkpoint is the visible change after approval, with uncertain credits still unresolved. Keep follow-up imports and duplicate/error scenarios out of the main path.
 
-## 6. Demonstrate memory on a later run
+## 5. Finish with Best Burger: documentation gaps
 
-Import `transactions-2026-10-follow-up.csv`: expect one added, one skipped. The new named $4,200 remainder posts October 28, so it cannot be approved in an October 25 review.
+<a id="8-add-best-burger-and-demonstrate-documentation-gaps"></a>
 
-Advance **Review date** to `2026-10-28`, open `SYN-2026-10-005`, explicitly select Juniper's October obligation, add a reason, acknowledge, and approve. A remaining-balance payment still requires manual allocation.
+Add Best Burger as a fifth property after the successful processing examples. Keep both synthesized PDFs as supplied. The base lease is intentionally partial; these PDFs test selectable-text intake rather than OCR on sloppy scans.
 
-Expected final result: **$15,450 approved, $0 remaining**, four approved allocations, five unique imported transactions. The earlier unidentified $4,200 credit remains open and unallocated. Expand the resolved partial-payment issue to show its original opening and later resolution events. Download the later brief and restart the app in the same terminal to show that the records and history persist.
+1. Choose **Add property from a lease**. Enter property `Best Burger`, tenant `BURGER TIME ACQUISITION COMPANY, L.L.C.`, description matching phrase `BEST BURGER`, and source date `1998-03-01`. Upload `sample-data/leases/best burger lease.pdf` (currently 10 pages).
+2. On the same property, use **Add lease document** or **Add another lease or amendment**. Upload `sample-data/leases/best burger - rent addendum.pdf` (currently 4 pages), dated `1998-03-01`, with document type **Lease**. It supports the original lease rather than representing a later rent change.
+3. Use the extraction prompt for each selected source separately. The app includes only the selected document in its prompt and expects a separate source-specific JSON proposal. Ask ChatGPT to describe missing information and unsupported terms outside the JSON. Retain the exact app reference filename, including its prefix and spaces.
+4. Compare the PDF with **Read the selected source**. Text extraction may alter ligatures or flatten headings even when the visual PDF is correct. For these exports, use citation section `Page text` and quotations matching the app's extracted page. A citation mismatch is an opportunity to review/correct the proposal, not proof that the underlying document is wrong.
+5. Stage only supported facts. For example, the addendum states a first-of-month payment day, but the applicable commencement date is not fully established. An unknown effective date uses `effective_from: null` plus uncertainty and remains pending. Omit unsupported values rather than forcing approval. If there are no supported facts, discuss the missing information without manufacturing an importable response.
+6. Return to October **Reconciliation**. Show Best Burger's missing-approved-term message and absence of a rent obligation. Existing obligations, payments, and the $6,300 October balance remain unchanged; Best Burger's expected rent is unestablished, not zero, and is excluded from that total.
 
-The review date filters posted evidence against current review decisions; moving backward does not reconstruct what the reviewer knew at that earlier time. Already allocated deposits stay reserved against duplicate use.
+Points to explain:
 
-## 7. Show date-driven option attention
+- Even initial rent depends on a Treasury-linked rate and cost inputs; neither PDF establishes a fixed monthly amount. The funding limitation is not rent. No macroeconomic lookup, formula calculation, or replacement rent confirmation is required for this demo.
+- Conditional late charges use business days after a default notice and cannot be represented as a simple five-calendar-day grace period.
+- Renewal language lacks the earliest notice boundary required by the current option schema; the partial packet also does not establish exercised options or a current 2026 term. Leave these unresolved.
+- Some gaps come from missing source information, some from extraction, and some from the deliberately limited data model. The app validates submitted facts, shows proposed uncertainty, and blocks obligations without approved rent/due terms. ChatGPT's broader gap explanation remains outside the imported JSON and is not automatically persisted as a comprehensive checklist.
 
-Open **Needs Attention**, review date `2026-10-25`. Click **Stage fictional attention examples** and follow the link to review Beacon's three pending date/option terms. This is manually authored fixture staging, not a live extraction result or an automatic approval. The live skill can also propose these terms.
+Suggested closing:
 
-Approve the cited commencement, expiration, and one-option rule. Return to Needs Attention and show the **August 31–November 30, 2026 inclusive notice window**. Its passage does not imply exercise.
+> The earlier properties show what we can process with reviewed terms. This property shows where we stop: we retain the evidence and supported facts, but we need more information before recording expected rent. Missing information is a review task, not permission to guess.
 
-Under Beacon, open **Record an option exercise after reviewing its source** and read `beacon-extension-confirmation.txt`. Select it explicitly and enter:
+Expected endpoint: five properties, both Best Burger originals retained, no Best Burger obligation or payment, and the previously reviewed portfolio balances preserved. See the [Best Burger fixture notes](sample-data/README.md#best-burger-realistic-pdf-intake-and-documentation-gaps) for details.
 
-- Exercise date: `2026-09-15`.
-- New expiration: `2030-08-31`.
-- Page: `1`; section: `2. EXERCISE CONFIRMATION`.
-- Quotation: copy the supporting confirmation paragraph from that section.
-- Notes: explain the reviewed notice, dates, and that extension rent remains unestablished.
+## Optional material for questions or a separate rehearsal
 
-Acknowledge and approve. Show zero remaining options, the recorded extended expiration, and the retained event source. This changes attention planning, not existing obligations or approved rent. The app cannot carry the current rent into an extension whose rent is unestablished.
-
-If time is short, show the open window live and describe the reviewed exercise path; keep the longer option walkthrough for questions.
-
-## 8. Add Best Burger and demonstrate documentation gaps
-
-Use this as the final scenario, after completing the other transaction-processing functions. Keep the prepared properties, transaction history, approvals, and ledgers in place; add Best Burger as a separate property. Both PDFs are synthesized samples, and the base lease is intentionally partial. They are not part of the automatic sample seed.
-
-1. On **Overview**, choose **Add property from a lease**. Enter property name `Best Burger`, tenant `BURGER TIME ACQUISITION COMPANY, L.L.C.`, optional description matching phrase `BEST BURGER`, and source document date `1998-03-01`. Upload `sample-data/leases/best burger lease.pdf`. Expect a new property and a retained 10-page source, with no automatic fact approval, obligation, or payment.
-2. From that property's **Add another lease or amendment** link or **Add lease document** action, upload `sample-data/leases/best burger - rent addendum.pdf` with date `1998-03-01` and document type **Lease**. This is supporting material incorporated into the original lease, rather than a later rent change. Keep it on the same property. Expect a retained 4-page source.
-3. On **Lease review**, select the base lease and **Open document**, then copy its complete extraction prompt into ChatGPT. Repeat for the rent addendum as a separate source. The prompt includes only the selected document; the app does not automatically combine both PDFs into one cited packet. Ask ChatGPT to list missing information and unsupported terms separately from any importable JSON. Keep each JSON proposal tied to its selected app reference filename and source pages.
-4. Compare the PDF with **Read the selected source**. Explain that the PDF is visually readable but the local text extraction can alter ligatures or flatten headings. For these exports, cite the literal section `Page text` and retain the extracted quotation spelling. Use the exact reference filename shown by the app, including its `Property … - ` prefix and spaces. If citation validation rejects a heading or quotation, correct the proposal against the displayed source; do not treat that rejection as a conclusion that the underlying lease is wrong.
-5. Paste/stage only supported facts. The addendum states monthly installments on the first day, but the applicable commencement date is not fully established. A supported fact with an unknown effective date uses `effective_from: null` and an uncertainty explanation; it remains pending until that date is supported. The current schema cannot represent the conditional business-day late-charge rule or the renewal clause's unspecified earliest notice boundary. Explain those limitations outside the JSON and omit unsupported fact types/values. If no supported facts are returned, discuss the missing information without fabricating an importable proposal. Stage proposals for review; approve only facts whose values, dates, and citations are actually established.
-6. Return to **Reconciliation** for the demo month. Best Burger should have no automatically generated rent obligation. Show the preview's missing-approved-term message. In particular, neither document supplies a fixed monthly base-rent amount: initial rent also requires external rate/cost inputs. Keep that amount unresolved, and do not create a replacement rent confirmation, calculate macroeconomic adjustments, infer option exercise, or assign it payments from another property's sample data.
-
-Suggested explanation:
-
-> The earlier properties demonstrate processing when reviewed rent terms are available. This property demonstrates where the process stops: we retain the documents and extract supported facts, but we still need a confirmed rent amount and supporting dates before recording expected rent. Some uncertainty comes from the supplied packet, some from text extraction, and some from our deliberately limited data model.
-
-Expected checkpoint: a fourth property (or another new property if additional intake examples were already added), two retained PDF sources, proposed/reviewed facts only where supported, and no Best Burger rent obligation or approved payment. Existing property records and balances are unchanged. The app shows proposal uncertainty and missing approved terms; ChatGPT's fuller gap explanation stays outside the imported JSON and is not automatically saved as a document-gap checklist.
-
-The PDFs remain as supplied. This scenario tests intake, evidence review, and restraint around missing data; solving historical OCR, formula-based rent, and incomplete documents is outside the demonstration. See [sample-data/README.md](sample-data/README.md#best-burger-realistic-pdf-intake-and-documentation-gaps) for the packet's contents and limitations.
-
-## Optional edge cases
-
-Use these in a separate fresh scenario so they do not obscure the successful path:
+These actions change the scenario; they are not required for the main demo:
 
 | Input/action | Expected behavior |
 |---|---|
+| Reimport the October CSV | Zero added, four skipped; approvals are retained |
+| `transactions-2026-10-follow-up.csv` | One new named $4,200 credit and one duplicate; October 28 receipt is ineligible in an October 25 review |
+| Approve that follow-up on October 28 | Explicitly allocate to Juniper's October obligation with evidence; October remaining becomes $2,100 Harbor Court, while historical Juniper arrears remain |
 | `transactions-invalid.csv` | Row-specific errors; no rows imported, including its valid-looking first row |
-| `transactions-conflicting-id.csv` after the original file | Reused identifier with changed details blocks the file |
-| `transactions-ambiguous-full.csv` before approving Beacon | Two distinct full credits fit the same rent; neither is chosen automatically; a prior proposal becomes stale |
-| Reject a full proposal with a reason and rerun | Rejection stays in history; automatic matching does not recreate it |
-| Approve the same deposit twice | Second attempt is blocked; no duplicate allocation |
-| Review October 10/11 before Beacon's posted credit | Within approved grace on the tenth; after grace on the eleventh |
-| Missing grace or unsupported late fee | Unknown grace remains unspecified; no fee invented |
-| Exercise outside an approved notice window | Held for additional reviewed terms; no waiver inferred |
+| `transactions-conflicting-id.csv` after October import | Reused identifier with changed details blocks the file |
+| `transactions-ambiguous-full.csv` before approving Beacon | Two full credits fit; matching cannot choose; a prior proposal becomes stale |
+| `transactions-property-review.csv` | Unmatched/multiple-property descriptions require manual property assignment, separate from payment approval |
+| Reject a proposal and rerun / approve a deposit twice | Rejection persists / duplicate allocation is blocked |
+| Beacon option attention and exercise | Additional source review and explicit exercise approval; do this in a separate scenario so pending amendments do not disrupt the main path |
+| Restart using the same selected database | Sources, approvals, transactions, obligations, and unresolved history persist |
 
-## Explain choices and limits candidly
+## Presentation boundaries
 
-AI is useful here for interpreting unstructured lease language. Deterministic rules are better for money, dates, matching constraints, and auditable state transitions. The separate skill makes the AI boundary reviewable without model credentials in the app.
+Lease interpretation uses the manual ChatGPT handoff. Money, dates, matching constraints, reports, and state changes use deterministic code. Quote checks prove text location, not semantic correctness or legal validity. Live model output has not been benchmarked; automated tests use hand-authored proposals.
 
-SQLite and server-rendered pages keep the local prototype understandable and persistent without a deployment or frontend build pipeline. Evidence and append-only decisions matter more than broad feature coverage for this demonstration.
+The prototype uses fictional data only, one lease per property, USD base rent, and a limited term schema. It does not provide OCR, production authentication/recovery, live bank access, payment execution, message delivery, automatic formula-based rent, retroactive adjustments, deposit splitting, or general bookkeeping. Benefit claims remain hypotheses.
 
-Known limits: fictional data only; one lease per property; base rent only; manual ChatGPT handoff; no model-quality benchmark; quote checks do not prove interpretation; no retroactive amendment adjustments, overpayment/reversal accounting, deposit splitting, notice waivers, authentication, production recovery, or delivery integrations. Expected business benefits are hypotheses, not measured results.
-
-Use the recorded implementation/verification durations in `EVALUATION.md` accurately. Planning and between-slice user review were not timed by those logs, so do not present their sum as total project effort or use it as a complete measure of preparation time.
+Recorded build durations in `EVALUATION.md` exclude prior planning and between-slice review; they are not total project effort or complete demo preparation time.

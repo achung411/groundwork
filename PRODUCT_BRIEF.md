@@ -1,4 +1,4 @@
-# Property Operations Workflow — Product Brief
+# Groundwork Workflow — Product Brief
 
 **Status:** Interview prototype implemented; observed results and limitations are recorded in `EVALUATION.md`.
 **Purpose:** Define the product problem and the interview prototype before implementation.
@@ -173,7 +173,7 @@ Commercial property-management and lease-administration products already offer m
 
 ## Decisions still intentionally open
 
-- Final product name and branding; “Property Operations” is the prototype's working title.
+- Visual identity beyond the agreed product name, “Groundwork.”
 - Any future model API/provider integration or hosted deployment. This iteration uses local FastAPI, server-rendered HTML, and SQLite; its only runtime AI step is the manual ChatGPT lease handoff.
 - Any future integration with Google Drive, email, or a bank sandbox.
 - Whether the prototype later expands to periodic sales reports, property notes, or document storage beyond the demo packet.

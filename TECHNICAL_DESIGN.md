@@ -1,4 +1,4 @@
-# Property Operations Workflow — Technical Design
+# Groundwork Workflow — Technical Design
 
 **Status:** Implemented take-home prototype; see `EVALUATION.md` for verified behavior and limits.
 **Related product brief:** [`PRODUCT_BRIEF.md`](PRODUCT_BRIEF.md)  
@@ -292,7 +292,7 @@ Keep each step reviewable. Before each implementation slice, explain its purpose
 
 - Source text is stored in SQLite, preserving page markers and stable document identity.
 - Invalid pasted JSON is retained for correction. Staged proposals are rejected and resubmitted to change their values; approved history is preserved.
-- The working title is “Property Operations,” with a small responsive stylesheet and server-rendered forms.
+- The product name is “Groundwork,” with a small responsive stylesheet and server-rendered forms.
 - Runtime and development dependencies are listed in the requirements files. Python 3.9.6 and the README setup/run commands were verified in a fresh virtual environment.
 
 `DEMO_WALKTHROUGH.md` provides the rehearsal sequence and expected checkpoints. `EVALUATION.md` distinguishes automated/observed results from the unmeasured live extraction quality and remaining manual browser checks.

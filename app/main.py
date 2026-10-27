@@ -30,7 +30,7 @@ async def lifespan(app):
     yield
 
 
-app = FastAPI(title="Property Operations", lifespan=lifespan)
+app = FastAPI(title="Groundwork", lifespan=lifespan)
 app.mount("/static", StaticFiles(directory=ROOT / "app" / "static"), name="static")
 templates = Jinja2Templates(directory=ROOT / "app" / "templates")
 

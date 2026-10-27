@@ -1,6 +1,6 @@
 ---
 name: lease-extraction
-description: Extract evidence-backed proposed rent, lease dates, and extension terms from fictional commercial lease text for the Property Operations prototype's manual JSON handoff.
+description: Extract evidence-backed proposed rent, lease dates, and extension terms from fictional commercial lease text for the Groundwork prototype's manual JSON handoff.
 ---
 
 # Lease extraction
