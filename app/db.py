@@ -119,6 +119,23 @@ CREATE TABLE IF NOT EXISTS transactions (
     UNIQUE(account_label, external_id)
 );
 CREATE UNIQUE INDEX IF NOT EXISTS transactions_property_external ON transactions(property_id, external_id);
+CREATE TABLE IF NOT EXISTS transaction_intake (
+    id INTEGER PRIMARY KEY,
+    external_id TEXT NOT NULL UNIQUE,
+    import_id INTEGER NOT NULL REFERENCES imports(id),
+    source_row INTEGER NOT NULL,
+    posted_date TEXT NOT NULL,
+    description TEXT NOT NULL,
+    amount_cents INTEGER NOT NULL CHECK(amount_cents > 0),
+    candidates_json TEXT NOT NULL,
+    transaction_id INTEGER UNIQUE REFERENCES transactions(id)
+);
+CREATE TABLE IF NOT EXISTS transaction_assignments (
+    transaction_id INTEGER PRIMARY KEY REFERENCES transactions(id),
+    method TEXT NOT NULL CHECK(method IN ('description', 'manual')),
+    evidence_json TEXT NOT NULL,
+    review_decision_id INTEGER REFERENCES review_decisions(id)
+);
 CREATE TABLE IF NOT EXISTS match_proposals (
     id INTEGER PRIMARY KEY,
     transaction_id INTEGER NOT NULL REFERENCES transactions(id),
@@ -217,7 +234,7 @@ def main():
         # Reset our tables transactionally instead of unlinking a potentially open database.
         initialize(target)
         with connect(target) as connection:
-            for table in ("lease_option_events", "exception_events", "exceptions", "payment_allocations", "match_proposals", "transactions", "imports", "rent_obligations", "extraction_submissions", "review_decisions", "fact_evidence", "lease_facts", "document_uploads", "lease_documents", "property_account_labels", "properties"):
+            for table in ("lease_option_events", "exception_events", "exceptions", "payment_allocations", "match_proposals", "transaction_assignments", "transaction_intake", "transactions", "imports", "rent_obligations", "extraction_submissions", "review_decisions", "fact_evidence", "lease_facts", "document_uploads", "lease_documents", "property_account_labels", "properties"):
                 connection.execute("DELETE FROM " + table)
             if args.command == "reset":
                 from app.seed import seed

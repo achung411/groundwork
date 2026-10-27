@@ -1,4 +1,4 @@
-# Interview walkthrough
+# Demo walkthrough
 
 This guide targets an 8–10 minute demonstration, plus time for the live ChatGPT handoff. All records and transactions are fictional. The exercise demonstrates a small owner-managed workflow, not measured operational impact or production readiness.
 
@@ -8,14 +8,22 @@ Keep the current app/database on port 8000. In a **new terminal**, from the repo
 
 ```sh
 source .venv/bin/activate
-export PROPERTY_DB_PATH="$PWD/data/interview-$(date +%Y%m%d-%H%M%S).sqlite3"
+export PROPERTY_DB_PATH="$PWD/data/demo-$(date +%Y%m%d-%H%M%S).sqlite3"
 python -m app.db init
 python -m uvicorn app.main:app --host 127.0.0.1 --port 8001
 ```
 
 Open [the isolated app](http://127.0.0.1:8001). Keep that terminal open; its database selection persists for later commands in that terminal. Each new filename starts a fresh demonstration without resetting your main records. To demonstrate persistence, stop with Ctrl+C and repeat only the Uvicorn command in the same terminal. If port 8001 is occupied, stop the earlier rehearsal server or choose another loopback port consistently.
 
-Before the interview, run `python -m pytest -q` and `python -m pip check` in the activated environment. Have a separate ChatGPT session ready and locate the CSV files in `sample-data/` for the browser's file picker. The generated copyable prompt contains the skill instructions, response contract, and source text; it does not require a model key or a skill installation in ChatGPT.
+Before the demo, run `python -m pytest -q` and `python -m pip check` in the activated environment. Have a separate ChatGPT session ready and locate the CSV files in `sample-data/` for the browser's file picker. The generated copyable prompt contains the skill instructions, response contract, and source text; it does not require a model key or a skill installation in ChatGPT.
+
+## Optional: prepare historical activity before the live demonstration
+
+To start with multiple transactions already visible, use `sample-data/transactions-history.csv` before importing any October scenario. It contains eight August/September credits totaling $30,900, with IDs distinct from the other sample files. Follow the [historical preload instructions](sample-data/README.md#historical-preload-august-and-september-2026) in this isolated database. Orchard's amendment must be reviewed before creating the historical $5,050 obligations; complete that review in preparation if you take this path. For the final live intake/extraction example afterward, use the Best Burger PDF packet in step 8 rather than repeating the already-approved Orchard amendment. Harbor Court remains available as a simpler optional intake example.
+
+Import the history once (eight added), create the August and September obligations, and review/approve supported payments separately. Keep Juniper's two unidentified credits unallocated unless additional fictional evidence is verified. After the documented supported approvals, Orchard and Beacon have zero historical balance; Juniper has $8,400 outstanding with two unallocated $4,200 credits. Restarting the same database preserves this prepared state. A read-only September 30 ledger view can introduce the existing history before importing October's new activity.
+
+The numbered walkthrough below assumes no historical preload and performs Orchard's amendment approval live. If history is preloaded, skip its already-completed amendment approval and distinguish October's monthly totals from all-period ledger balances: paying October does not settle earlier Juniper arrears.
 
 ## 1. Explain the problem and approval boundary
 
@@ -108,6 +116,25 @@ Acknowledge and approve. Show zero remaining options, the recorded extended expi
 
 If time is short, show the open window live and describe the reviewed exercise path; keep the longer option walkthrough for questions.
 
+## 8. Add Best Burger and demonstrate documentation gaps
+
+Use this as the final scenario, after completing the other transaction-processing functions. Keep the prepared properties, transaction history, approvals, and ledgers in place; add Best Burger as a separate property. Both PDFs are synthesized samples, and the base lease is intentionally partial. They are not part of the automatic sample seed.
+
+1. On **Overview**, choose **Add property from a lease**. Enter property name `Best Burger`, tenant `BURGER TIME ACQUISITION COMPANY, L.L.C.`, optional description matching phrase `BEST BURGER`, and source document date `1998-03-01`. Upload `sample-data/leases/best burger lease.pdf`. Expect a new property and a retained 10-page source, with no automatic fact approval, obligation, or payment.
+2. From that property's **Add another lease or amendment** link or **Add lease document** action, upload `sample-data/leases/best burger - rent addendum.pdf` with date `1998-03-01` and document type **Lease**. This is supporting material incorporated into the original lease, rather than a later rent change. Keep it on the same property. Expect a retained 4-page source.
+3. On **Lease review**, select the base lease and **Open document**, then copy its complete extraction prompt into ChatGPT. Repeat for the rent addendum as a separate source. The prompt includes only the selected document; the app does not automatically combine both PDFs into one cited packet. Ask ChatGPT to list missing information and unsupported terms separately from any importable JSON. Keep each JSON proposal tied to its selected app reference filename and source pages.
+4. Compare the PDF with **Read the selected source**. Explain that the PDF is visually readable but the local text extraction can alter ligatures or flatten headings. For these exports, cite the literal section `Page text` and retain the extracted quotation spelling. Use the exact reference filename shown by the app, including its `Property … - ` prefix and spaces. If citation validation rejects a heading or quotation, correct the proposal against the displayed source; do not treat that rejection as a conclusion that the underlying lease is wrong.
+5. Paste/stage only supported facts. The addendum states monthly installments on the first day, but the applicable commencement date is not fully established. A supported fact with an unknown effective date uses `effective_from: null` and an uncertainty explanation; it remains pending until that date is supported. The current schema cannot represent the conditional business-day late-charge rule or the renewal clause's unspecified earliest notice boundary. Explain those limitations outside the JSON and omit unsupported fact types/values. If no supported facts are returned, discuss the missing information without fabricating an importable proposal. Stage proposals for review; approve only facts whose values, dates, and citations are actually established.
+6. Return to **Reconciliation** for the demo month. Best Burger should have no automatically generated rent obligation. Show the preview's missing-approved-term message. In particular, neither document supplies a fixed monthly base-rent amount: initial rent also requires external rate/cost inputs. Keep that amount unresolved, and do not create a replacement rent confirmation, calculate macroeconomic adjustments, infer option exercise, or assign it payments from another property's sample data.
+
+Suggested explanation:
+
+> The earlier properties demonstrate processing when reviewed rent terms are available. This property demonstrates where the process stops: we retain the documents and extract supported facts, but we still need a confirmed rent amount and supporting dates before recording expected rent. Some uncertainty comes from the supplied packet, some from text extraction, and some from our deliberately limited data model.
+
+Expected checkpoint: a fourth property (or another new property if additional intake examples were already added), two retained PDF sources, proposed/reviewed facts only where supported, and no Best Burger rent obligation or approved payment. Existing property records and balances are unchanged. The app shows proposal uncertainty and missing approved terms; ChatGPT's fuller gap explanation stays outside the imported JSON and is not automatically saved as a document-gap checklist.
+
+The PDFs remain as supplied. This scenario tests intake, evidence review, and restraint around missing data; solving historical OCR, formula-based rent, and incomplete documents is outside the demonstration. See [sample-data/README.md](sample-data/README.md#best-burger-realistic-pdf-intake-and-documentation-gaps) for the packet's contents and limitations.
+
 ## Optional edge cases
 
 Use these in a separate fresh scenario so they do not obscure the successful path:
@@ -131,4 +158,4 @@ SQLite and server-rendered pages keep the local prototype understandable and per
 
 Known limits: fictional data only; one lease per property; base rent only; manual ChatGPT handoff; no model-quality benchmark; quote checks do not prove interpretation; no retroactive amendment adjustments, overpayment/reversal accounting, deposit splitting, notice waivers, authentication, production recovery, or delivery integrations. Expected business benefits are hypotheses, not measured results.
 
-Use the recorded implementation/verification durations in `EVALUATION.md` accurately. Planning and between-slice user review were not timed by those logs, so do not present their sum as total project effort or automatically claim compliance with an interview time limit.
+Use the recorded implementation/verification durations in `EVALUATION.md` accurately. Planning and between-slice user review were not timed by those logs, so do not present their sum as total project effort or use it as a complete measure of preparation time.

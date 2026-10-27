@@ -16,7 +16,7 @@ def upload(rows):
     output = io.StringIO()
     writer = csv.writer(output)
     writer.writerow(COLUMNS)
-    writer.writerows(rows)
+    writer.writerows([[row[0], row[2], row[3] + " | " + row[1], row[4]] for row in rows])
     return import_csv('fictional-ledger.csv', output.getvalue().encode())
 
 

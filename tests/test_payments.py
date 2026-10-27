@@ -27,7 +27,7 @@ def one_row(identifier, amount, property_label="Beacon Industrial operating", po
     buffer = io.StringIO()
     writer = csv.writer(buffer)
     writer.writerow(COLUMNS)
-    writer.writerow([identifier, property_label, posted, "FICTIONAL TEST CREDIT", amount])
+    writer.writerow([identifier, posted, "FICTIONAL TEST CREDIT | " + property_label, amount])
     return buffer.getvalue().encode()
 
 

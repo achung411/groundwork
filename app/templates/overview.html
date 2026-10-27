@@ -17,7 +17,7 @@
     <p class="eyebrow">Commercial property</p>
     <h3><a href="/properties/{{ property.id }}">{{ property.name }}</a></h3>
     <p>{{ property.tenant_name }}</p>
-    <dl><dt>Account</dt><dd>{{ property.account_label }}</dd><dt>Source documents</dt><dd>{{ property.document_count }}</dd></dl>
+    <dl><dt>Description matching phrase</dt><dd>{{ property.account_label }}</dd><dt>Source documents</dt><dd>{{ property.document_count }}</dd></dl>
     <a class="button" href="/properties/{{ property.id }}">View lease records <span aria-hidden="true">→</span></a>
     <p><a href="/properties/{{ property.id }}/ledger?as_of={{ as_of }}">View rent ledger</a></p>
   </article>

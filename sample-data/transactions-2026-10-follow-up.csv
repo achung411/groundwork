@@ -1,3 +1,3 @@
-transaction_id,account_label,posted_date,description,amount
-SYN-2026-10-003,Juniper Market operating,2026-10-03,"MOSAIC FOODS OCT RENT PART 1",3000.00
-SYN-2026-10-005,Juniper Market operating,2026-10-28,"MOSAIC FOODS OCT RENT REMAINDER",4200.00
+transaction_id,posted_date,description,amount
+SYN-2026-10-003,2026-10-03,MOSAIC FOODS OCT RENT PART 1 | Juniper Market operating,3000.00
+SYN-2026-10-005,2026-10-28,MOSAIC FOODS OCT RENT REMAINDER | Juniper Market operating,4200.00

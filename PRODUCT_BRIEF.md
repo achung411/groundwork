@@ -162,7 +162,7 @@ Do not present these expected benefits as measured results unless they are actua
 Choices resolved during planning and implementation:
 
 - Three fictional base leases, Orchard's rent amendment, and a later Beacon option-confirmation source support the demo.
-- Synthetic CSV fields are transaction identifier, account label, posted date, description, and amount. Deterministic full-payment rules make suggestions; partial and ambiguous cases require manual allocation.
+- Synthetic CSV fields are transaction identifier, posted date, description, and amount. Deterministic full-payment rules make suggestions; partial and ambiguous cases require manual allocation.
 - Lease facts, payment allocations, and option exercise events require explicit human review. Reports and attention checks calculate views without changing approval state.
 - A local SQLite database preserves sources, effective terms, allocations, and inspectable decision/exception history.
 - A virtual environment, pinned direct dependencies, documented local commands, isolated rehearsal data, and automated checks support the take-home. Repository publication and a hosted GitHub workflow have not been performed.
@@ -178,3 +178,7 @@ Commercial property-management and lease-administration products already offer m
 - Any future integration with Google Drive, email, or a bank sandbox.
 - Whether the prototype later expands to periodic sales reports, property notes, or document storage beyond the demo packet.
 
+
+### Description-based property identification
+
+Configured property labels are case-insensitive substring phrases in CSV descriptions. Exactly one candidate property assigns the row; no candidates or multiple property candidates require explicit manual assignment with evidence and confirmation. This is separate from rent payment approval. Import all valid rows, preserve original descriptions and assignment evidence, and keep unresolved rows visible in reconciliation and monthly briefs. Changing phrases affects future imports only. Transaction identifiers are feed-wide because the CSV no longer carries an account namespace.

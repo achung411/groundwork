@@ -1,4 +1,4 @@
-"""Explicit, property-owned CSV labels; retired labels retain historical ownership."""
+"""Explicit, property-owned description phrases; retired labels retain historical ownership."""
 import json
 
 from app.db import connect

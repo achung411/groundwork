@@ -14,7 +14,7 @@ from fastapi.templating import Jinja2Templates
 from app.db import ROOT, connect, initialize
 from app.services.extraction_import import ReviewError, review_fact, stage_proposal
 from app.services.obligations import ObligationError, create_obligation, month_bounds, preview_obligation
-from app.services.reconciliation import CsvImportError, MAX_CSV_BYTES, import_csv
+from app.services.reconciliation import CsvImportError, MAX_CSV_BYTES, import_csv, unresolved_rows, manually_assign
 from app.services.payments import PaymentError, approve_payment, reconciliation_state, reject_proposal, review_date, run_matching
 from app.services.attention import add_months, attention_items, record_exercise
 from app.services.attention_demo import stage_attention_demo
@@ -319,10 +319,17 @@ def reconciliation_page(request, period, errors=None, notice=None, status_code=2
             "JOIN properties p ON p.id=t.property_id JOIN imports i ON i.id=t.import_id "
             "WHERE t.posted_date>=? AND t.posted_date<=? ORDER BY t.posted_date, t.id",
             (first.isoformat(), last.isoformat())).fetchall()
+        transactions = [dict(row) for row in transactions]
+        for transaction in transactions:
+            assignment = connection.execute("SELECT * FROM transaction_assignments WHERE transaction_id=?", (transaction["id"],)).fetchone()
+            transaction["assignment"] = dict(assignment) if assignment else None
+            if assignment:
+                transaction["assignment"]["evidence"] = json.loads(assignment["evidence_json"])
+        unresolved = unresolved_rows(connection, period)
         imports = connection.execute("SELECT * FROM imports ORDER BY id DESC").fetchall()
     obligations = [item["obligation"] for item in properties if item["obligation"]]
     return templates.TemplateResponse(request=request, name="reconciliation.html", status_code=status_code, context={
-        "period": period, "properties": properties, "transactions": transactions, "imports": imports,
+        "period": period, "properties": properties, "transactions": transactions, "unresolved": unresolved, "imports": imports,
         "obligation_count": len(obligations), "expected_cents": sum(item["amount_cents"] for item in obligations),
         "paid_cents": sum(item["paid_cents"] for item in obligations),
         "remaining_cents": sum(item["remaining_cents"] for item in obligations),
@@ -335,6 +342,7 @@ def reconciliation(request: Request, period: Optional[str] = None, notice: str =
                 "existing": "This month's obligation already exists. Its stored values have not changed.",
                 "matched": "Matching review complete. Proposals and exceptions were retained; no payment was recorded.",
                 "payment": "Payment approved and recorded. Balances and issue history have been updated.",
+                "assigned": "Property assigned. No payment was recorded; run matching or allocate rent after reviewing the evidence.",
                 "rejected": "Match proposal rejected. No payment was recorded; the decision remains in history."}
     message = messages.get(notice)
     if import_id is not None and notice in ("imported", "duplicate"):
@@ -375,6 +383,17 @@ async def upload_transactions(request: Request, period: str = Form(...), transac
 
 def reconciliation_url(period, as_of, notice, **extra):
     return "/reconciliation?" + urlencode({"period": period, "as_of": as_of or current_review_date(), "notice": notice, **extra})
+
+
+@app.post("/reconciliation/assignments/{intake_id}", response_class=HTMLResponse)
+def assign_transaction_property(request: Request, intake_id: int, property_id: int = Form(...),
+                                period: str = Form(...), as_of: str = Form(...), notes: str = Form(""), acknowledge: bool = Form(False)):
+    try:
+        manually_assign(intake_id, property_id, notes, acknowledge, period, as_of)
+    except (CsvImportError, PaymentError, ObligationError) as error:
+        return reconciliation_page(request, period, errors=[str(error)], status_code=409, as_of=as_of,
+                                   form_values={"intake_id": intake_id, "property_id": property_id, "notes": notes})
+    return RedirectResponse(reconciliation_url(period, as_of, "assigned"), status_code=303)
 
 
 @app.post("/reconciliation/matching", response_class=HTMLResponse)

@@ -3,6 +3,7 @@
 import csv
 import hashlib
 import io
+import json
 import re
 from datetime import date
 from decimal import Decimal
@@ -12,7 +13,7 @@ from app.services.account_labels import owners, normalize
 
 MAX_CSV_BYTES = 2 * 1024 * 1024
 MAX_ROWS = 10000
-COLUMNS = ["transaction_id", "account_label", "posted_date", "description", "amount"]
+COLUMNS = ["transaction_id", "posted_date", "description", "amount"]
 
 
 class CsvImportError(ValueError):
@@ -35,7 +36,7 @@ def parse_rows(content, accounts):
     try:
         header = next(reader, [])
         if len(header) != len(COLUMNS) or set(header) != set(COLUMNS):
-            raise CsvImportError(["CSV must contain exactly these five unique columns: " + ", ".join(COLUMNS) + "."])
+            raise CsvImportError(["CSV must contain exactly these four unique columns: " + ", ".join(COLUMNS) + "."])
         while True:
             line = reader.line_num + 1
             cells = next(reader, None)
@@ -46,14 +47,12 @@ def parse_rows(content, accounts):
             if len(parsed) + len(errors) >= MAX_ROWS:
                 raise CsvImportError(["CSV exceeds the 10,000-row limit."])
             if len(cells) != len(header):
-                errors.append("Row {}: expected five values, received {}.".format(line, len(cells)))
+                errors.append("Row {}: expected four values, received {}.".format(line, len(cells)))
                 continue
             row = {key: value.strip() for key, value in zip(header, cells)}
             problems = []
             if not row["transaction_id"] or len(row["transaction_id"]) > 200:
                 problems.append("transaction_id must be 1–200 characters")
-            if normalize(row["account_label"]) not in accounts:
-                problems.append("account_label does not match a fictional property account")
             if not row["description"] or len(row["description"]) > 2000:
                 problems.append("description must be 1–2,000 characters")
             try:
@@ -72,8 +71,10 @@ def parse_rows(content, accounts):
             if problems:
                 errors.append("Row {}: {}.".format(line, "; ".join(problems)))
             else:
-                parsed.append({"external_id": row["transaction_id"], "account_label": row["account_label"],
-                               "property_id": accounts[normalize(row["account_label"])], "posted_date": row["posted_date"],
+                candidates = description_candidates(row["description"], accounts)
+                property_id = candidates[0]["property_id"] if len(candidates) == 1 else None
+                parsed.append({"external_id": row["transaction_id"], "candidates": candidates,
+                               "property_id": property_id, "posted_date": row["posted_date"],
                                "description": row["description"], "amount_cents": amount_cents, "source_row": line})
     except csv.Error as error:
         errors.append("Row {}: malformed CSV ({}).".format(reader.line_num, error))
@@ -97,14 +98,19 @@ def import_csv(filename, content):
         seen, new_rows, errors = {}, [], []
         skipped = 0
         for row in rows:
-            key = (row["property_id"], row["external_id"])
-            # The same transaction ID may legitimately exist on a different property account.
+            key = row["external_id"]
             old = seen.get(key)
             if old is None:
-                old = connection.execute("SELECT * FROM transactions WHERE property_id=? AND external_id=?", key).fetchone()
+                old = connection.execute("SELECT * FROM transaction_intake WHERE external_id=?", (key,)).fetchone()
+            if old is None:
+                legacy = connection.execute("SELECT * FROM transactions WHERE external_id=?", (key,)).fetchall()
+                if len(legacy) > 1:
+                    errors.append("Row {}: transaction_id {} has multiple historical records; use a unique bank reference.".format(row["source_row"], key))
+                    continue
+                old = legacy[0] if legacy else None
             if old is not None:
-                if any(old[field] != row[field] for field in ("posted_date", "description", "amount_cents", "property_id")):
-                    errors.append("Row {}: transaction_id {} already exists on this account with different details; nothing was imported.".format(row["source_row"], row["external_id"]))
+                if any(old[field] != row[field] for field in ("posted_date", "description", "amount_cents")):
+                    errors.append("Row {}: transaction_id {} already exists with different details; nothing was imported.".format(row["source_row"], row["external_id"]))
                 else:
                     skipped += 1
             else:
@@ -116,8 +122,65 @@ def import_csv(filename, content):
             "INSERT INTO imports(filename, content_digest, row_count, imported_count, skipped_count, status) VALUES (?, ?, ?, ?, ?, 'imported')",
             (filename, digest, len(rows), len(new_rows), skipped)).lastrowid
         for row in new_rows:
-            connection.execute(
-                "INSERT INTO transactions(external_id, import_id, source_row, property_id, account_label, posted_date, description, amount_cents) "
-                "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-                (row["external_id"], import_id, row["source_row"], row["property_id"], row["account_label"], row["posted_date"], row["description"], row["amount_cents"]))
+            intake_id = connection.execute(
+                "INSERT INTO transaction_intake(external_id,import_id,source_row,posted_date,description,amount_cents,candidates_json) VALUES (?,?,?,?,?,?,?)",
+                (row["external_id"], import_id, row["source_row"], row["posted_date"], row["description"], row["amount_cents"], json.dumps(row["candidates"]))).lastrowid
+            if row["property_id"] is not None:
+                assign_row(connection, intake_id, row["property_id"], "description", row["candidates"])
         return {"import_id": import_id, "added": len(new_rows), "skipped": skipped, "repeated_file": False}
+
+
+def description_candidates(description, accounts):
+    matched = {}
+    text = normalize(description)
+    for phrase, property_id in accounts.items():
+        if phrase and phrase in text:
+            matched.setdefault(property_id, []).append(phrase)
+    return [{"property_id": property_id, "phrases": sorted(phrases)} for property_id, phrases in sorted(matched.items())]
+
+
+def assign_row(connection, intake_id, property_id, method, evidence, decision_id=None):
+    row = connection.execute("SELECT * FROM transaction_intake WHERE id=?", (intake_id,)).fetchone()
+    # account_label is retained only for historical schema compatibility; source CSVs have no such field.
+    label = connection.execute("SELECT account_label FROM properties WHERE id=?", (property_id,)).fetchone()[0]
+    transaction_id = connection.execute(
+        "INSERT INTO transactions(external_id,import_id,source_row,property_id,account_label,posted_date,description,amount_cents) VALUES (?,?,?,?,?,?,?,?)",
+        (row["external_id"], row["import_id"], row["source_row"], property_id, label, row["posted_date"], row["description"], row["amount_cents"])).lastrowid
+    connection.execute("INSERT INTO transaction_assignments(transaction_id,method,evidence_json,review_decision_id) VALUES (?,?,?,?)",
+                       (transaction_id, method, json.dumps(evidence), decision_id))
+    connection.execute("UPDATE transaction_intake SET transaction_id=? WHERE id=?", (transaction_id, intake_id))
+
+
+def unresolved_rows(connection, period=None):
+    query = "SELECT q.*,i.filename FROM transaction_intake q JOIN imports i ON i.id=q.import_id WHERE q.transaction_id IS NULL"
+    params = []
+    if period:
+        query += " AND substr(q.posted_date,1,7)=?"
+        params.append(period)
+    rows = [dict(row) for row in connection.execute(query + " ORDER BY q.posted_date,q.id", params)]
+    properties = {row['id']: row['name'] for row in connection.execute('SELECT id,name FROM properties')}
+    for row in rows:
+        row['candidates'] = [{**item, 'name': properties.get(item['property_id'], 'Unknown property')} for item in json.loads(row['candidates_json'])]
+    return rows
+
+
+def manually_assign(intake_id, property_id, notes, acknowledge, period, as_of):
+    from app.services.obligations import month_bounds
+    from app.services.payments import review_date
+    month_bounds(period)
+    review_date(as_of)
+    notes = notes.strip()
+    if not acknowledge or not notes or len(notes) > 4000:
+        raise CsvImportError(["Confirm the property assignment and provide supporting evidence of 1–4,000 characters."])
+    with connect() as connection:
+        connection.execute('BEGIN IMMEDIATE')
+        row = connection.execute('SELECT * FROM transaction_intake WHERE id=?', (intake_id,)).fetchone()
+        if row is None or row['transaction_id'] is not None:
+            raise CsvImportError(["This transaction is missing or has already been assigned. Refresh the review."])
+        if row['posted_date'][:7] != period or row['posted_date'] > as_of:
+            raise CsvImportError(["The transaction must be in the selected month and posted by the review date."])
+        if not connection.execute('SELECT 1 FROM properties WHERE id=?', (property_id,)).fetchone():
+            raise CsvImportError(["Choose an existing property."])
+        decision_id = connection.execute("INSERT INTO review_decisions(record_type,record_id,decision,reviewer_label,notes) VALUES ('transaction_intake',?,'property_assigned','Demo owner',?)",
+                                         (intake_id, notes)).lastrowid
+        assign_row(connection, intake_id, property_id, 'manual', {'property_id': property_id, 'notes': notes}, decision_id)

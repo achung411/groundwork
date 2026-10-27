@@ -3,17 +3,17 @@
 {% block content %}
 <a href="/properties/{{ property.id }}">← {{ property.name }}</a>
 <p class="eyebrow">Transaction matching</p>
-<h1>Configure account labels</h1>
-<p class="intro">Choose which CSV account labels identify {{ property.name }}.</p>
-<p>Matching ignores capitalization and surrounding spaces. Everything else must match a configured label exactly. Transaction descriptions are not used to identify a property; no AI or fuzzy matching is involved.</p>
+<h1>Configure description matching</h1>
+<p class="intro">Choose which description phrases identify {{ property.name }}.</p>
+<p>Configured labels match substrings within transaction descriptions, ignoring capitalization. Use distinctive tenant names or payment references. If phrases match more than one property, the row requires manual assignment. No AI or fuzzy matching is involved.</p>
 {% if error %}<p class="notice error" role="alert">{{ error }}</p>{% endif %}
 {% if saved %}<p class="notice" role="status">Account labels saved.</p>{% endif %}
 <form method="post" class="panel">
-<label for="preferred_label">Preferred account label</label>
+<label for="preferred_label">Primary description phrase</label>
 <input type="text" id="preferred_label" name="preferred_label" required maxlength="160" value="{{ values.preferred_label }}">
-<label for="aliases">Additional accepted labels (one per line)</label>
+<label for="aliases">Additional matching phrases (one per line)</label>
 <textarea id="aliases" name="aliases" rows="6">{{ values.aliases }}</textarea>
-<p class="muted">Use the values found in your CSV’s account_label column. Up to 30 labels, including the preferred label. Remove an alias to stop accepting it on future imports.</p>
+<p class="muted">Use phrases expected within the CSV’s description column. Up to 30 labels, including the preferred label. Remove an alias to stop matching it on future imports.</p>
 <p>Labels are reserved for this property even after removal. Existing transactions keep their original label and property assignment. Saving these settings does not record any rent payments.</p>
 <button type="submit">Save account labels</button>
 </form>

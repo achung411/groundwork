@@ -6,7 +6,6 @@ from collections import Counter
 from datetime import date
 
 from app.db import connect
-from app.services.account_labels import owners, normalize
 from app.services.obligations import month_bounds
 
 
@@ -56,8 +55,6 @@ def candidate_analysis(connection, period, as_of):
         "WHERE t.posted_date BETWEEN ? AND ? AND t.posted_date<=? "
         "AND NOT EXISTS (SELECT 1 FROM payment_allocations a WHERE a.transaction_id=t.id) ORDER BY t.id",
         (first.isoformat(), last.isoformat(), as_of)).fetchall()
-    historical_owners = owners(connection, historical=True)
-    transactions = [tx for tx in transactions if historical_owners.get(normalize(tx["account_label"])) == tx["property_id"]]
     obligations = connection.execute(
         "SELECT * FROM rent_obligations o WHERE o.period=? AND NOT EXISTS "
         "(SELECT 1 FROM payment_allocations a WHERE a.obligation_id=o.id)", (period,)).fetchall()
@@ -125,7 +122,7 @@ def run_matching(period, as_of):
             prior = connection.execute("SELECT * FROM match_proposals WHERE transaction_id=? AND obligation_id=?", pair).fetchone() if pair else None
             if pair in pairs and prior is None:
                 obligation = choices[0]
-                reason = "Exact full amount, same property account, and one candidate in {}. {}. Memo identity has not been inferred; review the source transaction.".format(period, payment_timing(obligation, transaction["posted_date"]))
+                reason = "Exact full amount, same property account, and one candidate in {}. {}. Property assignment is separate from payer verification; review the source description and assignment evidence.".format(period, payment_timing(obligation, transaction["posted_date"]))
                 connection.execute(
                     "INSERT INTO match_proposals(transaction_id, obligation_id, proposed_amount_cents, status, rationale, review_date) VALUES (?, ?, ?, 'proposed', ?, ?)",
                     (transaction["id"], obligation["id"], transaction["amount_cents"], reason, as_of))
@@ -155,8 +152,6 @@ def validate_allocation(connection, transaction_id, obligation_id, period, as_of
         raise PaymentError("The transaction is posted after the review date and cannot be recorded yet.")
     if transaction["property_id"] != obligation["property_id"]:
         raise PaymentError("A transaction can only be allocated to rent for the same property account.")
-    if owners(connection, historical=True).get(normalize(transaction["account_label"])) != transaction["property_id"]:
-        raise PaymentError("The transaction's account label does not belong to this property.")
     if obligation["period"] > period:
         raise PaymentError("Advance allocation to a later rent month is outside this prototype.")
     if connection.execute("SELECT 1 FROM payment_allocations WHERE transaction_id=?", (transaction_id,)).fetchone():

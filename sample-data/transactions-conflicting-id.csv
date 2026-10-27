@@ -1,2 +1,2 @@
-transaction_id,account_label,posted_date,description,amount
-SYN-2026-10-001,Orchard Row operating,2026-10-01,"ACH CREDIT WILLOW PINE OUTFITTERS OCT RENT",9999.00
+transaction_id,posted_date,description,amount
+SYN-2026-10-001,2026-10-01,ACH CREDIT WILLOW PINE OUTFITTERS OCT RENT | Orchard Row operating,9999.00

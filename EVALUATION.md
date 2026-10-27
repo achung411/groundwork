@@ -18,13 +18,13 @@ All six build slices are complete. A newly created virtual environment installed
 | Live ChatGPT extraction quality | Not benchmarked; automated tests use hand-authored expected proposals, not observed model outputs |
 | Automated browser CSV file selection | Earlier tool limitation remains; HTTP uploads passed and the main app contains the user's imported fixture |
 
-The detailed per-slice records below are historical checkpoints. The implementation/verification durations exclude unmeasured prior planning and between-slice user review; they must not be presented as total project effort or proof of interview time-limit compliance.
+The detailed per-slice records below are historical checkpoints. The implementation/verification durations exclude unmeasured prior planning and between-slice user review; they must not be presented as total project effort or a complete measure of demo preparation time.
 
 ## Slice 1 — Running foundation
 
 **Date:** October 25, 2026 (America/Los_Angeles).
 
-**Elapsed implementation and verification:** Approximately 3 minutes, starting at 4:20 p.m. Earlier product discovery and planning are separate activities; no claim is made about their measured duration or whether the interview excludes them.
+**Elapsed implementation and verification:** Approximately 3 minutes, starting at 4:20 p.m. Earlier product discovery and planning are separate activities; their duration was not measured in this log.
 
 Delivered a local FastAPI application with a portfolio overview, property records, SQLite storage, source document text, seven pre-reviewed fictional facts with quotations and approval history, and explicit initialize/reset commands. Orchard's amendment is retained as source material without an approved rent change. Ordinary startup never reseeds records.
 
@@ -139,13 +139,13 @@ The Markdown artifact is generated on demand from a consistent read snapshot; re
 
 For review: inspect Needs Attention and the October brief, download the Markdown artifact, and try a draft copy. Optionally stage Beacon's attention proposals, approve them, then record the fictional exercise from its source. Slice 6 (final demo preparation and user-led refinement) has not started.
 
-## Slice 6 — Final verification and interview materials
+## Slice 6 — Final verification and demo materials
 
 **Date:** October 25, 2026 (America/Los_Angeles).
 
 **Elapsed implementation and verification:** Approximately 10 minutes, starting around 6:44 p.m. Cumulative recorded implementation/verification time across all six slices is approximately 68 minutes. Prior planning and between-slice user review are not measured by these logs.
 
-Added `DEMO_WALKTHROUGH.md` with isolated setup, a suggested interview sequence, expected balances, optional edge cases, and candid architecture/limitation talking points. Shortened README into an entry point linking to that guide, aligned the brief/design/plan with implemented decisions, and added one complete HTTP workflow regression. No material application fixes were needed in this slice.
+Added `DEMO_WALKTHROUGH.md` with isolated setup, a suggested demo sequence, expected balances, optional edge cases, and candid architecture/limitation talking points. Shortened README into an entry point linking to that guide, aligned the brief/design/plan with implemented decisions, and added one complete HTTP workflow regression. No material application fixes were needed in this slice.
 
 ### Observed verification
 
@@ -160,7 +160,7 @@ Added `DEMO_WALKTHROUGH.md` with isolated setup, a suggested interview sequence,
 
 ### Delivery and remaining limits
 
-All planned prototype build slices are complete. The next step is the user's live interview rehearsal and feedback, with the manual ChatGPT handoff and browser file picker. There is no production deployment, repository publication, external message delivery, real account access, or measured business-impact claim.
+All planned prototype build slices are complete. The next step is the user's live demo rehearsal and feedback, with the manual ChatGPT handoff and browser file picker. There is no production deployment, repository publication, external message delivery, real account access, or measured business-impact claim.
 
 ## Extension — Property and lease-document intake
 
@@ -187,3 +187,13 @@ Automated suite: **145 passed**. Added coverage for normalized alias resolution,
 Automated suite: **151 passed**. Ledger tests cover chronological running balances, same-day charges before receipts, multiple partial payments, arrears applied to their original rent month, date cutoffs, scheduled charges, pending/proposed credits excluded from balances, property isolation, persistence, read-only GET behavior, empty ledgers, invalid dates, unknown properties, and early-payment credits including negative cent formatting.
 
 Browser verification: an isolated fictional ledger showed $6,400 charged, $3,200 in approved receipts, $3,200 owed, and a separate $500 unapproved credit. Changing the through date to September 30 showed $3,200 charged, $1,000 received, and $2,200 owed. Verified the property-page link and ledger in the working app without adding or approving records there.
+
+### Description-based property assignment extension
+
+Automated suite: **162 passed**. The four-column CSV replaces the external account label with literal case-insensitive description matching against configured primary phrases and aliases. Tests cover unique matches, no matches, multiple property matches, overlapping phrases, multiple aliases for one property, manual confirmation/evidence and date/property validation, stale assignment rejection, no payment before separate approval, assignment evidence retention, re-import stability after label changes, unresolved-row duplicate conflicts, legacy data preservation, and unassigned rows in HTML/Markdown reports. Existing end-to-end payment and ledger checks use updated fictional CSV artifacts. All sample artifacts remain available; a new `transactions-property-review.csv` demonstrates unmatched and ambiguous property descriptions.
+
+Browser verification in an isolated fictional database: imported one unmatched row and one row matching two properties. Selected Beacon Industrial for the unmatched row, supplied evidence, and confirmed; the queue dropped from two to one, the row appeared with a manual assignment, and no payment was recorded. The working database was not seeded or populated during verification.
+
+### Historical transaction fixture validation
+
+Validated `sample-data/transactions-history.csv` with the application's actual parser and import service in a temporary seeded database. Original `M/D/YY` dates failed all eight date validations; normalized them to `YYYY-MM-DD`, retaining IDs, descriptions, amounts, and row order. Result: eight valid rows, three uniquely matched properties, August/September totals of $15,450 each, no duplicate IDs or collisions with other sample CSVs. First import added eight; repeat import skipped eight. After reviewing the fictional Orchard amendment and creating six obligations, each month produced two full-payment proposals. Approving those and the named Juniper partials produced ledger balances of $0 Orchard, $0 Beacon, and $8,400 Juniper through September 30, with $30,900 charged and $22,500 approved. Unidentified credits remained unallocated. Subsequent October import added four; the follow-up added one/skipped one. The validation database was discarded; the working database was not changed. No application code changed for this validation.

@@ -23,11 +23,17 @@ Explicitly loading the samples adds three fictional properties, four source docu
 
 ## Add a property from a lease
 
-On Overview, click **Add property from a lease**. Enter the property/tenant names, source document date, and an optional fictional account label used by CSV imports. Upload a selectable-text PDF or UTF-8 TXT file. The property and retained source are saved together, then the app opens lease review. No terms or obligations are automatically approved or created.
+On Overview, click **Add property from a lease**. Enter the property/tenant names, source document date, and an optional phrase to match within transaction descriptions. Upload a selectable-text PDF or UTF-8 TXT file. The property and retained source are saved together, then the app opens lease review. No terms or obligations are automatically approved or created.
 
 The same flow works on an empty database without running the sample seeding command. Existing property pages also offer **Add lease document** for a later lease or amendment. Uploads preserve the original bytes and a file fingerprint in the ignored local database; the source can be downloaded from the review screen. Repeated uploads do not overwrite records or create duplicates. Reference filenames distinguish files with the same original name on different properties; use the reference shown in the extraction prompt.
 
 PDF/TXT intake allows up to 10 MB, 100 pages, and 500,000 extracted characters. Password-protected PDFs, scans/image-only or blank PDF pages, and DOCX are unsupported. Compare PDF-extracted text with the original before reviewing terms. TXT files without page markers become one source page; existing sequential page markers are preserved. On unnumbered pages the citation section is `Page text`; numbered pages still require an actual numbered heading. Use fictional leases only. [Harbor Court](sample-data/leases/harbor-court-lease.txt) is an unnumbered example for trying this flow.
+
+## Preload historical transactions
+
+Use [transactions-history.csv](sample-data/transactions-history.csv) for eight sample transactions across August and September 2026 ($30,900 total), leaving October and the edge-case CSVs for later imports. First add/review the sample properties and lease terms, including Orchard's rent amendment. Import history once through Reconciliation; switch the rent month between August and September to see each month's four rows. Create monthly rent obligations and approve payments separately to populate the property ledgers; importing credits never records rent automatically.
+
+Follow the [historical preload instructions](sample-data/README.md#historical-preload-august-and-september-2026) for the exact sequence, expected balances, unresolved credits, and duplicate behavior. This is an optional preparation step; ordinary startup still leaves an empty database empty.
 
 ## Demonstrate the workflow
 
@@ -39,6 +45,8 @@ Follow [DEMO_WALKTHROUGH.md](DEMO_WALKTHROUGH.md) for an isolated walkthrough, e
 4. **Report:** review approved balances, pending credits, citations, assumptions, exceptions, and next steps. Download the Markdown brief or copy an unsent reminder to edit outside the app.
 
 Read [sample-data/README.md](sample-data/README.md) for fixture purposes. Use only fictional records.
+
+Finish with the **Best Burger PDF intake scenario**: add the partial synthetic base lease and its same-date rent addendum as a new property after testing transaction processing. This demonstrates retained evidence and missing/unsupported terms while leaving expected rent unestablished. Keep both PDFs as supplied; no OCR repair or formula-based rent calculation is needed. Follow [walkthrough step 8](DEMO_WALKTHROUGH.md#8-add-best-burger-and-demonstrate-documentation-gaps) and the [fixture notes](sample-data/README.md#best-burger-realistic-pdf-intake-and-documentation-gaps).
 
 ## Persistence and reset
 
@@ -79,7 +87,9 @@ The [product brief](PRODUCT_BRIEF.md), [technical design](TECHNICAL_DESIGN.md), 
 
 ### Configure transaction labels
 
-Open a property and choose **Configure transaction labels** to edit its preferred CSV `account_label` and accepted aliases (one per line). Matching ignores case and surrounding whitespace; other characters must match exactly. Labels are unique to a property and remain reserved after removal. Removed labels stop accepting new transactions, while imported records keep their source label and property assignment. Changes are recorded in label history. A repeated transaction ID on the same property is checked across all its aliases, so a renamed label cannot duplicate a deposit. No AI or description matching is used.
+Open a property and choose **Configure transaction labels** to edit its primary description phrase and aliases (one per line). Use distinctive tenant names or payment references. Phrases match case-insensitive substrings of `description`, with no AI, regex, fuzzy scoring, or amount-based property identification. Multiple phrases for one property count as one candidate. A unique property is assigned automatically; no match or multiple matching properties leave the row in **Transactions needing a property**, where you select a property, explain the evidence, and confirm. Assignment does not approve rent payments. Changing phrases never reassigns imported rows. Retired phrases remain reserved to the original property but no longer match new rows.
+
+CSV columns are now exactly `transaction_id,posted_date,description,amount` (any order). There is no `account_label` column. Each transaction ID must be unique across the imported feed, including across properties. Identical source details are skipped on re-import, while changed details reject the file. Keep bank reference IDs stable; independent bank feeds that reuse IDs need distinct identifiers. Existing historical assignments and payment approvals are preserved. The monthly brief also lists rows awaiting property assignment.
 
 ### Property rent ledgers
 

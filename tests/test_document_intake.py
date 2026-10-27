@@ -172,7 +172,7 @@ def test_uploaded_property_can_establish_rent_and_match_its_own_account(database
             assert client.post('/properties/{}/facts/{}/review'.format(property_id, fact['id']), data={'decision': 'approved', 'acknowledge': 'true'}).status_code == 200
         review = {'period': '2026-10', 'as_of': '2026-10-25'}
         assert client.post('/reconciliation/obligations', data={**review, 'property_id': property_id}).status_code == 200
-        csv = b'transaction_id,account_label,posted_date,description,amount\nSYN-HARBOR-001,Harbor Court operating,2026-10-01,COVE STUDIO OCT RENT,2100.00\n'
+        csv = b'transaction_id,posted_date,description,amount\nSYN-HARBOR-001,2026-10-01,COVE STUDIO OCT RENT | Harbor Court operating,2100.00\n'
         assert client.post('/reconciliation/import', data=review, files={'transaction_file': ('harbor.csv', csv, 'text/csv')}).status_code == 200
         assert client.post('/reconciliation/matching', data=review).status_code == 200
     with connect() as connection:

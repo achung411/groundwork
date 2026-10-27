@@ -36,21 +36,34 @@
 {% endfor %}
 <section class="panel">
 <h2>Import fictional transactions</h2>
-<p>Choose <code>sample-data/transactions-2026-10.csv</code>, or another synthetic file using the same five columns. UTF-8 CSV only; 2 MB maximum. Invalid rows block the entire import.</p>
+<p>Choose <code>sample-data/transactions-2026-10.csv</code>, or another synthetic file using the same four columns. UTF-8 CSV only; 2 MB maximum. Invalid rows block the entire import.</p>
 <form method="post" action="/reconciliation/import" enctype="multipart/form-data">
   <input type="hidden" name="period" value="{{ period }}">
   <input type="hidden" name="as_of" value="{{ as_of }}">
   <label for="transaction_file">Transaction CSV</label><input id="transaction_file" name="transaction_file" type="file" accept=".csv,text/csv" required>
   <button type="submit">Validate and import CSV</button>
 </form>
-<details><summary>CSV format and duplicate rules</summary><p>Required columns: <code>transaction_id,account_label,posted_date,description,amount</code>. Each row needs an identifier, an existing fictional account label, a YYYY-MM-DD posted date, a description, and a positive USD amount with at most two decimal places.</p><p>Identical files are skipped. A repeated identifier on the same property (including across its label aliases) is skipped if all transaction details match; conflicting details block the entire file. The same identifier on a different property is allowed. Configure accepted labels from the property’s lease records; matching ignores capitalization and surrounding spaces. Amount alone never establishes a duplicate or a payment match.</p></details>
+<details><summary>CSV format and duplicate rules</summary><p>Required columns: <code>transaction_id,posted_date,description,amount</code>. Each row needs an identifier, a YYYY-MM-DD posted date, a description, and a positive USD amount with at most two decimal places.</p><p>Configured property phrases are matched as case-insensitive substrings of the description. One matching property is assigned; no matches or matches to multiple properties require manual assignment below. Multiple matching phrases for the same property count as one match. Amount is not used to identify a property.</p><p>Transaction IDs must be unique across this feed, including across properties. Identical files and repeated IDs with identical dates, descriptions, and amounts are skipped. Conflicting details reject the entire file. Label changes never reassign imported transactions.</p></details>
+</section>
+<section class="panel" id="property-assignment">
+<h2>Transactions needing a property <span class="count">{{ unresolved|length }}</span></h2>
+<p>These rows are imported but cannot be matched to rent or reduce any property balance until assigned. Property assignment does not approve a rent payment.</p>
+{% for row in unresolved %}<article class="term"><h3>{{ row.external_id }} · {{ row.amount_cents|money }}</h3><p>Posted {{ row.posted_date }} · {{ row.filename }} · Row {{ row.source_row }}</p><blockquote>{{ row.description }}</blockquote>
+{% if row.candidates %}<p>Multiple properties matched at import:</p><ul>{% for candidate in row.candidates %}<li>{{ candidate.name }} · {{ candidate.phrases|join(', ') }}</li>{% endfor %}</ul>{% else %}<p>No configured phrase matched at import.</p>{% endif %}
+{% if row.posted_date > as_of %}<p class="notice">Posted after the review date. Choose a later review date before assignment.</p>{% elif properties %}
+<form method="post" action="/reconciliation/assignments/{{ row.id }}"><input type="hidden" name="period" value="{{ period }}"><input type="hidden" name="as_of" value="{{ as_of }}">
+<label for="assign-property-{{ row.id }}">Property for {{ row.external_id }}</label><select id="assign-property-{{ row.id }}" name="property_id" required><option value="">Choose a property explicitly</option>{% for property in properties %}<option value="{{ property.id }}" {% if form_values.intake_id == row.id and form_values.property_id == property.id %}selected{% endif %}>{{ property.name }}</option>{% endfor %}</select>
+<label for="assign-notes-{{ row.id }}">Evidence for assigning {{ row.external_id }}</label><textarea id="assign-notes-{{ row.id }}" name="notes" maxlength="4000" rows="2" required>{% if form_values.intake_id == row.id %}{{ form_values.notes }}{% endif %}</textarea>
+<label class="check"><input type="checkbox" name="acknowledge" value="true" required> I verified this transaction belongs to the selected property.</label><button type="submit">Assign property for {{ row.external_id }}</button></form>
+{% else %}<p><a href="/properties/new">Add a property</a> before assigning this transaction.</p>{% endif %}</article>
+{% else %}<p>No transactions awaiting property assignment in this month.</p>{% endfor %}
 </section>
 {% include "payment_review.html" %}
-<h2>Imported transactions · {{ period }} <span class="count">{{ transactions|length }}</span></h2>
-<p>Only posted dates in the selected month are shown. A file may contain transactions for other months.</p>
-{% if transactions %}<div class="table-scroll"><table><caption class="sr-only">Imported transactions for {{ period }}</caption><thead><tr><th>Posted</th><th>Property / account</th><th>Description / ID</th><th>Amount</th><th>Source</th></tr></thead><tbody>
-{% for transaction in transactions %}<tr><td>{{ transaction.posted_date }}</td><td>{{ transaction.property_name }}<br><span class="muted">{{ transaction.account_label }}</span></td><td>{{ transaction.description }}<br><span class="muted">{{ transaction.external_id }}</span></td><td class="amount">{{ transaction.amount_cents|money }}</td><td>{{ transaction.filename }}<br><span class="muted">Row {{ transaction.source_row }} · Import #{{ transaction.import_id }}</span></td></tr>{% endfor %}
-</tbody></table></div>{% else %}<p class="notice">No transactions imported for this month.</p>{% endif %}
+<h2>Assigned transactions · {{ period }} <span class="count">{{ transactions|length }}</span></h2>
+<p>Assigned rows posted in the selected month are shown here. Unassigned rows appear above; a file may contain transactions for other months.</p>
+{% if transactions %}<div class="table-scroll"><table><caption class="sr-only">Imported transactions for {{ period }}</caption><thead><tr><th>Posted</th><th>Property / assignment</th><th>Description / ID</th><th>Amount</th><th>Source</th></tr></thead><tbody>
+{% for transaction in transactions %}<tr><td>{{ transaction.posted_date }}</td><td>{{ transaction.property_name }}<br>{% if transaction.assignment %}<span class="muted">{{ transaction.assignment.method|capitalize }} assignment</span><details><summary>Assignment evidence</summary>{% if transaction.assignment.method == 'manual' %}{{ transaction.assignment.evidence.notes }} · Review decision #{{ transaction.assignment.review_decision_id }}{% else %}{% for candidate in transaction.assignment.evidence %}Matched phrase(s): {{ candidate.phrases|join(', ') }}{% endfor %}{% endif %}</details>{% else %}<span class="muted">Historical account assignment</span>{% endif %}</td><td>{{ transaction.description }}<br><span class="muted">{{ transaction.external_id }}</span></td><td class="amount">{{ transaction.amount_cents|money }}</td><td>{{ transaction.filename }}<br><span class="muted">Row {{ transaction.source_row }} · Import #{{ transaction.import_id }}</span></td></tr>{% endfor %}
+</tbody></table></div>{% else %}<p class="notice">{% if unresolved %}No transactions assigned to a property yet. Review the rows above.{% else %}No transactions imported for this month.{% endif %}</p>{% endif %}
 <h2>Import history · All months</h2>
 {% for run in imports %}<details><summary>{{ run.filename }} · {{ run.imported_count }} added · {{ run.skipped_count }} skipped</summary><p>Import #{{ run.id }} · {{ run.imported_at }} · {{ run.row_count }} source rows</p><p class="muted">File fingerprint: <code>{{ run.content_digest }}</code></p></details>{% else %}<p>No files imported yet.</p>{% endfor %}
 {% include "payment_history.html" %}

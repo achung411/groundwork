@@ -3,6 +3,7 @@
 import json
 from datetime import datetime, timezone
 
+from app.services.reconciliation import unresolved_rows
 from app.services.attention import attention_items, rent_status
 from app.services.obligations import month_bounds
 from app.services.payments import reconciliation_state, review_date, usd
@@ -54,7 +55,10 @@ def build_report(connection, period, as_of):
     for lease in attention["leases"]:
         lease["event_records"] = [{**dict(event), "source": json.loads(event["evidence_json"])}
                                   for event in lease["events"] if event["exercised_on"] <= as_of]
+    unresolved = [row for row in unresolved_rows(connection, period) if row["posted_date"] <= as_of]
     recommendations = []
+    if unresolved:
+        recommendations.append("Assign properties to {} imported transaction(s) before rent matching; they are excluded from property balances.".format(len(unresolved)))
     if missing:
         recommendations.append("Create this month's obligations after reviewing approved terms for: " + ", ".join(p["name"] for p in missing) + ".")
     if pending:
@@ -69,7 +73,7 @@ def build_report(connection, period, as_of):
         recommendations.append("Review lease attention items and record any option exercise from cited evidence. Do not assume exercise from elapsed time.")
     if not recommendations:
         recommendations.append("Retain the reviewed evidence and decisions and review the next period.")
-    return {"period": period, "as_of": as_of, "generated_at": datetime.now(timezone.utc).isoformat(),
+    return {"unresolved": unresolved, "period": period, "as_of": as_of, "generated_at": datetime.now(timezone.utc).isoformat(),
             "obligations": obligations, "missing": missing, "expected_cents": sum(o["amount_cents"] for o in obligations),
             "paid_cents": sum(o["paid_cents"] for o in obligations), "remaining_cents": sum(o["remaining_cents"] for o in obligations),
             "pending": pending, "futures": futures, "state": state, "assumptions": assumptions,
@@ -105,6 +109,9 @@ def report_markdown(report):
         lines.append("No unallocated credits posted through the review date in this month.")
     if report["futures"]:
         lines.append("Transactions posted after review date (excluded from payment totals): " + ", ".join(tx["external_id"] for tx in report["futures"]))
+    lines += ["", "## Transactions awaiting property assignment", ""]
+    for row in report["unresolved"]:
+        lines.append("- {} — {} — {} — {}. Not recorded as rent.".format(row["external_id"], row["posted_date"], usd(row["amount_cents"]), row["description"]))
     lines += ["", "## Assumptions", ""] + ["- " + item for item in report["assumptions"]]
     lines += ["", "## Uncertainty and pending lease facts", ""]
     for fact in report["uncertainties"]:

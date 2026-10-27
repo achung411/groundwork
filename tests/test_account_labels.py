@@ -17,7 +17,7 @@ def deposit(label, amount='3200.00', identifier='SYN-LABEL-1'):
     output = io.StringIO()
     writer = csv.writer(output)
     writer.writerow(COLUMNS)
-    writer.writerow([identifier, label, '2026-10-05', 'FICTIONAL RENT', amount])
+    writer.writerow([identifier, '2026-10-05', 'FICTIONAL RENT | ' + label, amount])
     return output.getvalue().encode()
 
 
@@ -30,14 +30,14 @@ def test_alias_import_normalization_and_duplicate_protection(database):
     pid = beacon_id()
     save_settings(pid, 'Beacon checking', 'Beacon export\nBEACON EXPORT')
     assert import_csv('one.csv', deposit('  BEACON EXPORT  '))['added'] == 1
-    assert import_csv('two.csv', deposit('Beacon checking'))['skipped'] == 1
+    assert import_csv('two.csv', deposit('  BEACON EXPORT  ').replace(b'\r\n', b'\n'))['skipped'] == 1
     with pytest.raises(CsvImportError, match='different details'):
         import_csv('conflict.csv', deposit('Beacon checking', '3201.00'))
     with connect() as connection:
         rows = connection.execute('SELECT * FROM transactions').fetchall()
         assert len(rows) == 1
         assert rows[0]['property_id'] == pid
-        assert rows[0]['account_label'] == 'BEACON EXPORT'
+        assert rows[0]['account_label'] == 'Beacon checking'
 
 
 def test_old_label_remains_valid_for_existing_payment_only(database):
@@ -45,8 +45,9 @@ def test_old_label_remains_valid_for_existing_payment_only(database):
     obligation_id, _ = create_obligation(pid, '2026-10')
     import_csv('old.csv', deposit('Beacon Industrial operating'))
     save_settings(pid, 'Beacon checking', '')
-    with pytest.raises(CsvImportError, match='account_label'):
-        import_csv('retired.csv', deposit('Beacon Industrial operating', identifier='SYN-NEW'))
+    import_csv('retired.csv', deposit('Beacon Industrial operating', identifier='SYN-NEW'))
+    with connect() as connection:
+        assert connection.execute('SELECT count(*) FROM transaction_intake WHERE transaction_id IS NULL').fetchone()[0] == 1
     assert run_matching('2026-10', '2026-10-25') == 1
     with connect() as connection:
         proposal = connection.execute('SELECT * FROM match_proposals').fetchone()

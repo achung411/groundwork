@@ -1,6 +1,6 @@
 <section class="panel" id="payment-review">
 <h2>Payment review</h2>
-<p>Full-payment proposals require an exact amount, the same property account, an entirely unpaid obligation, and a unique candidate for this month. Memo text is shown for your review; the app does not infer payer identity.</p>
+<p>Full-payment proposals require an exact amount, the same property account, an entirely unpaid obligation, and a unique candidate for this month. Property assignment uses configured description phrases or your manual decision. Verify payer identity against the source before approving rent.</p>
 <form method="post" action="/reconciliation/matching"><input type="hidden" name="period" value="{{ period }}"><input type="hidden" name="as_of" value="{{ as_of }}"><button type="submit">Run matching for {{ period }}</button></form>
 <p class="muted">Running matching saves proposals and unresolved issues. It does not record a payment. Rejected or withdrawn proposals are retained and are not automatically recreated.</p>
 {% for proposal in payment_state.proposals %}
@@ -42,4 +42,4 @@
     </form>
   {% else %}<p class="notice">No eligible obligation has enough remaining balance on this property account. Create or review its obligations; do not force an overpayment or combine unrelated credits.</p>{% endif %}
 </details>
-{% else %}<p>No imported transactions for this month.</p>{% endfor %}
+{% else %}<p>No property-assigned transactions for this month.</p>{% endfor %}
